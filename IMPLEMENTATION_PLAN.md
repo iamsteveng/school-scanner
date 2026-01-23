@@ -38,6 +38,11 @@ See `docs/TASK_WORKFLOW.md` for the “start next task” process and the brief 
 * Can deploy backend without errors
 * Secrets loaded correctly
 * Health check endpoint responds
+* Note: Convex + Vercel wiring completes in Phase 0.2 once the Next.js app exists
+
+**Design Notes**
+
+See `docs/tasks/phase-0-1-infrastructure-environment-setup.md`.
 
 ---
 
@@ -45,18 +50,25 @@ See `docs/TASK_WORKFLOW.md` for the “start next task” process and the brief 
 
 **Target Outcome**
 
-* Responsive web app shell with routing and auth-aware layout.
+* Responsive web app shell with routing, plus initial Convex + Vercel wiring.
 
 **Tasks**
 
 * Initialize Next.js app (hosted on Vercel)
 * Configure routing
 * Global layout + loading states
+* Initialize Convex project and link dev deployment
+* Add Convex client setup and env vars
+* Set up Vercel project and configure preview + production env vars
+* Validate Convex scheduler with a no-op job in dev
 
 **Verification**
 
 * `/start`, `/schools`, `/dashboard` routes load
 * Mobile + desktop render correctly
+* Convex dev deployment reachable from local app
+* Vercel preview and production use correct Convex URLs
+* Scheduler job runs in dev logs
 
 ⏩ *Parallel with 0.1*
 
