@@ -2,6 +2,14 @@
 
 ## MVP Implementation Plan
 
+## Tech Stack (Current Decision)
+
+* Frontend: Next.js hosted on Vercel
+* Backend: Convex (database, auth, functions, scheduler)
+* Cronjobs: Convex scheduler
+* API routes: only for external callbacks Convex cannot handle (e.g., Stripe webhooks)
+* Analytics: PostHog (product analytics) + Vercel Web Analytics (lightweight web stats)
+
 ---
 
 ## Phase 0 — Foundations (Must Be Done First)
@@ -14,9 +22,12 @@
 
 **Tasks**
 
-* Provision backend (e.g. Supabase / Firebase / custom backend)
-* Configure environment variables
-* Set up staging + production separation
+* Provision backend with Convex (database + auth + functions)
+* Configure Convex environments (dev / prod) and secrets
+* Set up Vercel project + env vars for Next.js + Convex URLs
+* Set up Convex scheduler for scheduled jobs (cron)
+* Reserve Next.js API routes only for external callbacks Convex cannot handle (e.g., Stripe webhooks)
+* Set up staging + production separation (Vercel + Convex)
 
 **Verification**
 
@@ -34,7 +45,7 @@
 
 **Tasks**
 
-* Initialize frontend framework (e.g. Next.js)
+* Initialize Next.js app (hosted on Vercel)
 * Configure routing
 * Global layout + loading states
 
@@ -350,7 +361,7 @@ Uses: WhatsApp
 
 **Tasks**
 
-* Cron for daily + weekly jobs
+* Convex scheduler for daily + weekly jobs
 * Skip inactive users
 * Log delivery
 
@@ -457,9 +468,15 @@ Uses: Stripe
 * checkout_started
 * checkout_completed
 
+**Tasks**
+
+* Set up PostHog project and Vercel Web Analytics
+* Instrument tracked events in frontend + backend
+
 **Verification**
 
-* Events visible in analytics tool
+* Events visible in PostHog
+* Web traffic visible in Vercel Web Analytics
 * Funnels computable
 
 ---
