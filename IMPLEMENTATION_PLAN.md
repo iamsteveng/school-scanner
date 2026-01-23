@@ -70,6 +70,10 @@ See `docs/tasks/phase-0-1-infrastructure-environment-setup.md`.
 * Vercel preview and production use correct Convex URLs
 * Scheduler job runs in dev logs
 
+**Design Notes**
+
+See `docs/tasks/phase-0-2-frontend-app-shell-setup.md`.
+
 ⏩ *Parallel with 0.1*
 
 ---
