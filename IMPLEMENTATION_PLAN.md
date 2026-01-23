@@ -10,6 +10,10 @@
 * API routes: only for external callbacks Convex cannot handle (e.g., Stripe webhooks)
 * Analytics: PostHog (product analytics) + Vercel Web Analytics (lightweight web stats)
 
+## Task Workflow
+
+See `docs/TASK_WORKFLOW.md` for the “start next task” process and the brief template at `docs/tasks/TEMPLATE.md`.
+
 ---
 
 ## Phase 0 — Foundations (Must Be Done First)
