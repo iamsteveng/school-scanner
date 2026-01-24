@@ -11,6 +11,7 @@
 import type * as crons from "../crons.js";
 import type * as health from "../health.js";
 import type * as jobs from "../jobs.js";
+import type * as verificationTokens from "../verificationTokens.js";
 
 import type {
   ApiFromModules,
@@ -22,6 +23,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   health: typeof health;
   jobs: typeof jobs;
+  verificationTokens: typeof verificationTokens;
 }>;
 
 /**
