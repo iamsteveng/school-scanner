@@ -1,7 +1,7 @@
 # Task Brief: Phase 0.2 Frontend App Shell Setup (Frontend)
 
 ## Status
-- In Progress
+- Completed
 
 ## Progress
 - Next.js app scaffolded (App Router + Tailwind).
@@ -9,12 +9,12 @@
 - Home page updated with route links.
 - Convex init completed by user; `.env.local` created.
 - Convex health query + cron stub added (requires `npx convex dev` to deploy).
-- Pending: set Vercel preview + production env vars.
 - Convex dev logs confirmed for cron.
 - App routes verified locally.
+- Vercel preview + production env vars set.
 
 ## Remaining
-- Configure Vercel Preview + Production env vars (`NEXT_PUBLIC_CONVEX_URL`).
+- None.
 
 ## Goal
 - Scaffold the Next.js app and wire Convex dev/prod deployments with Vercel preview/production envs.
