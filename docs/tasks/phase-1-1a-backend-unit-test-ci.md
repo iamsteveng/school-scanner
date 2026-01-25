@@ -1,5 +1,8 @@
 # Task Brief: Phase 1.1a Backend Unit Test CI (Backend)
 
+## Status
+- Completed
+
 ## Goal
 - Ensure backend unit tests run on CI for every PR and main push.
 
