@@ -31,9 +31,11 @@
 - None (placeholder; consider later).
 
 ## Testing / Verification
-- Create token, then consume succeeds.
-- Second consume fails.
-- Consume after 10 minutes fails.
+- Unit tests:
+  - Create token, then consume succeeds.
+  - Second consume fails.
+  - Consume after 10 minutes fails.
+- Verification passes only if all unit tests pass.
 
 ## Open Questions
 - Resolved: store token in plaintext, UUID format.
