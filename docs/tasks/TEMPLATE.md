@@ -25,7 +25,8 @@
 - 
 
 ## Testing / Verification
-- 
+- Unit tests must be added (or updated) for new behavior.
+- Verification passes only if all unit tests pass.
 
 ## Open Questions
 - 

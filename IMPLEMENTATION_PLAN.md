@@ -100,6 +100,25 @@ See `docs/tasks/phase-0-2-frontend-app-shell-setup.md`.
 
 ---
 
+### 1.1a Backend Unit Test CI (Backend)
+
+**Target Outcome**
+
+* Automated backend unit tests run on CI for every PR and main push.
+
+**Tasks**
+
+* Add CI workflow to run backend unit tests
+* Fail CI on any failing test
+* Cache dependencies where possible
+
+**Verification**
+
+* CI runs on PRs and main branch
+* Backend unit tests pass in CI
+
+---
+
 ### 1.2 WhatsApp Message Dispatch (Backend)
 
 **Target Outcome**
@@ -141,6 +160,25 @@ Uses: WhatsApp
 * Success state shown after submit
 
 ⏩ *Parallel with 1.1 / 1.2*
+
+---
+
+### 1.3a Frontend Unit Test CI (Frontend)
+
+**Target Outcome**
+
+* Automated frontend unit tests run on CI for every PR and main push.
+
+**Tasks**
+
+* Add CI workflow to run frontend unit tests
+* Fail CI on any failing test
+* Cache dependencies where possible
+
+**Verification**
+
+* CI runs on PRs and main branch
+* Frontend unit tests pass in CI
 
 ---
 
