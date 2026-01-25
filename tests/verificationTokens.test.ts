@@ -1,5 +1,5 @@
-import type { MutationCtx } from "convex/server";
 import { describe, expect, it, vi } from "vitest";
+import type { MutationCtx } from "../convex/_generated/server";
 import {
   consumeVerificationTokenHandler,
   createVerificationTokenHandler,
@@ -75,7 +75,7 @@ class FakeDb {
 }
 
 function makeCtx() {
-  return { db: new FakeDb() } as const;
+  return { db: new FakeDb() };
 }
 
 describe("verification tokens", () => {

@@ -12,3 +12,11 @@ This file tracks required env vars for local development, Vercel preview, and Ve
 - `STRIPE_PRICE_ID`
 - `WHATSAPP_PROVIDER_API_KEY`
 - `POSTHOG_API_KEY`
+
+## WhatsApp (Twilio)
+- `TWILIO_ACCOUNT_SID`
+- `TWILIO_AUTH_TOKEN`
+- `TWILIO_WHATSAPP_FROM` (e.g., `whatsapp:+14155238886`)
+- `APP_BASE_URL_PROD` (production domain for verification links)
+- `ALLOW_DYNAMIC_BASE_URL` (`true` to allow preview/base URL from client)
+- `ALLOWED_BASE_URL_HOSTS` (comma-separated allow-list, e.g. `.vercel.app,localhost`)

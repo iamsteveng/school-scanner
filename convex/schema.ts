@@ -11,4 +11,15 @@ export default defineSchema({
   })
     .index("by_token", ["token"])
     .index("by_phone", ["phone"]),
+  whatsapp_message_logs: defineTable({
+    phone: v.string(),
+    token: v.string(),
+    status: v.string(),
+    provider: v.string(),
+    createdAt: v.number(),
+    error: v.optional(v.string()),
+    messageSid: v.optional(v.string()),
+  })
+    .index("by_phone", ["phone"])
+    .index("by_status", ["status"]),
 });
