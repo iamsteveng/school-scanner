@@ -1,5 +1,8 @@
 # Task Brief: Phase 1.1 WhatsApp Verification Token System (Backend)
 
+## Status
+- Completed
+
 ## Goal
 - Implement secure, single-use, time-limited verification tokens mapped to phone numbers.
 
