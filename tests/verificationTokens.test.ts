@@ -1,3 +1,4 @@
+import type { MutationCtx } from "convex/server";
 import { describe, expect, it, vi } from "vitest";
 import {
   consumeVerificationTokenHandler,
@@ -49,10 +50,12 @@ class FakeDb {
   private idCounter = 0;
 
   query(_table: "verification_tokens") {
+    void _table;
     return new FakeQuery(this.store);
   }
 
   async insert(_table: "verification_tokens", doc: Omit<TokenDoc, "_id">) {
+    void _table;
     const _id = `token_${this.idCounter++}`;
     this.store.push({ _id, ...doc });
     return _id;
@@ -80,12 +83,12 @@ describe("verification tokens", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-25T10:00:00Z"));
 
-    const ctx = makeCtx();
-    const { token } = await createVerificationTokenHandler(ctx as any, {
+    const ctx = makeCtx() as unknown as MutationCtx;
+    const { token } = await createVerificationTokenHandler(ctx, {
       phone: "+85251234567",
     });
 
-    const result = await consumeVerificationTokenHandler(ctx as any, { token });
+    const result = await consumeVerificationTokenHandler(ctx, { token });
     expect(result.phone).toBe("+85251234567");
 
     vi.useRealTimers();
@@ -95,15 +98,15 @@ describe("verification tokens", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-25T10:00:00Z"));
 
-    const ctx = makeCtx();
-    const { token } = await createVerificationTokenHandler(ctx as any, {
+    const ctx = makeCtx() as unknown as MutationCtx;
+    const { token } = await createVerificationTokenHandler(ctx, {
       phone: "+85251234567",
     });
 
-    await consumeVerificationTokenHandler(ctx as any, { token });
+    await consumeVerificationTokenHandler(ctx, { token });
 
     await expect(
-      consumeVerificationTokenHandler(ctx as any, { token }),
+      consumeVerificationTokenHandler(ctx, { token }),
     ).rejects.toThrow("Token already used.");
 
     vi.useRealTimers();
@@ -113,15 +116,15 @@ describe("verification tokens", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-25T10:00:00Z"));
 
-    const ctx = makeCtx();
-    const { token } = await createVerificationTokenHandler(ctx as any, {
+    const ctx = makeCtx() as unknown as MutationCtx;
+    const { token } = await createVerificationTokenHandler(ctx, {
       phone: "+85251234567",
     });
 
     vi.setSystemTime(new Date("2026-01-25T10:10:01Z"));
 
     await expect(
-      consumeVerificationTokenHandler(ctx as any, { token }),
+      consumeVerificationTokenHandler(ctx, { token }),
     ).rejects.toThrow("Token expired.");
 
     vi.useRealTimers();
@@ -131,22 +134,22 @@ describe("verification tokens", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-25T10:00:00Z"));
 
-    const ctx = makeCtx();
-    const first = await createVerificationTokenHandler(ctx as any, {
+    const ctx = makeCtx() as unknown as MutationCtx;
+    const first = await createVerificationTokenHandler(ctx, {
       phone: "+85251234567",
     });
 
     vi.setSystemTime(new Date("2026-01-25T10:01:00Z"));
 
-    const second = await createVerificationTokenHandler(ctx as any, {
+    const second = await createVerificationTokenHandler(ctx, {
       phone: "+85251234567",
     });
 
     await expect(
-      consumeVerificationTokenHandler(ctx as any, { token: first.token }),
+      consumeVerificationTokenHandler(ctx, { token: first.token }),
     ).rejects.toThrow("Token already used.");
 
-    const result = await consumeVerificationTokenHandler(ctx as any, {
+    const result = await consumeVerificationTokenHandler(ctx, {
       token: second.token,
     });
     expect(result.phone).toBe("+85251234567");
