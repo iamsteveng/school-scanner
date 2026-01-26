@@ -11,6 +11,7 @@
 import type * as crons from "../crons.js";
 import type * as health from "../health.js";
 import type * as jobs from "../jobs.js";
+import type * as verificationFlow from "../verificationFlow.js";
 import type * as verificationTokens from "../verificationTokens.js";
 import type * as whatsapp from "../whatsapp.js";
 import type * as whatsappLogs from "../whatsappLogs.js";
@@ -25,6 +26,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   health: typeof health;
   jobs: typeof jobs;
+  verificationFlow: typeof verificationFlow;
   verificationTokens: typeof verificationTokens;
   whatsapp: typeof whatsapp;
   whatsappLogs: typeof whatsappLogs;

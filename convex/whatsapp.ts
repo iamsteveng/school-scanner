@@ -1,10 +1,104 @@
 "use node";
 
 import { v } from "convex/values";
+import type { ActionCtx } from "./_generated/server";
 import { action } from "./_generated/server";
 import { internal } from "./_generated/api";
 
 const DEFAULT_ALLOWED_HOSTS = ["localhost", "127.0.0.1", ".vercel.app"];
+
+export async function sendWhatsAppVerification(options: {
+  ctx: Pick<ActionCtx, "runMutation">;
+  phone: string;
+  token: string;
+  baseUrl?: string;
+}): Promise<{ ok: true }> {
+  const allowDynamic = process.env.ALLOW_DYNAMIC_BASE_URL === "true";
+  const prodBaseUrl = process.env.APP_BASE_URL_PROD;
+  const allowedHosts = process.env.ALLOWED_BASE_URL_HOSTS?.split(",").map(
+    (host) => host.trim(),
+  );
+
+  const resolvedBaseUrl = resolveBaseUrl({
+    allowDynamic,
+    prodBaseUrl,
+    baseUrlFromClient: options.baseUrl,
+    allowedHosts,
+  });
+
+  const verificationLink = buildVerificationLink(
+    resolvedBaseUrl,
+    options.token,
+  );
+
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const from = process.env.TWILIO_WHATSAPP_FROM;
+
+  if (!accountSid || !authToken || !from) {
+    throw new Error("Twilio credentials are not configured.");
+  }
+
+  const to = options.phone.startsWith("whatsapp:")
+    ? options.phone
+    : `whatsapp:${options.phone}`;
+
+  const body = `Your verification link: ${verificationLink}`;
+
+  try {
+    const response = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Basic ${Buffer.from(
+            `${accountSid}:${authToken}`,
+          ).toString("base64")}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          To: to,
+          From: from,
+          Body: body,
+        }),
+      },
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      await options.ctx.runMutation(internal.whatsappLogs.logWhatsAppSend, {
+        phone: options.phone,
+        token: options.token,
+        status: "failed",
+        provider: "twilio",
+        error: errorText,
+      });
+      throw new Error("Failed to send WhatsApp message.");
+    }
+
+    const payload = (await response.json()) as { sid?: string };
+    await options.ctx.runMutation(internal.whatsappLogs.logWhatsAppSend, {
+      phone: options.phone,
+      token: options.token,
+      status: "sent",
+      provider: "twilio",
+      messageSid: payload.sid,
+    });
+
+    return { ok: true };
+  } catch (error) {
+    if (error instanceof Error) {
+      await options.ctx.runMutation(internal.whatsappLogs.logWhatsAppSend, {
+        phone: options.phone,
+        token: options.token,
+        status: "failed",
+        provider: "twilio",
+        error: error.message,
+      });
+    }
+    throw error;
+  }
+}
 
 export function resolveBaseUrl(options: {
   allowDynamic: boolean;
@@ -74,90 +168,11 @@ export const sendVerificationWhatsApp = action({
     baseUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const allowDynamic = process.env.ALLOW_DYNAMIC_BASE_URL === "true";
-    const prodBaseUrl = process.env.APP_BASE_URL_PROD;
-    const allowedHosts = process.env.ALLOWED_BASE_URL_HOSTS?.split(",").map(
-      (host) => host.trim(),
-    );
-
-    const resolvedBaseUrl = resolveBaseUrl({
-      allowDynamic,
-      prodBaseUrl,
-      baseUrlFromClient: args.baseUrl,
-      allowedHosts,
+    return sendWhatsAppVerification({
+      ctx,
+      phone: args.phone,
+      token: args.token,
+      baseUrl: args.baseUrl,
     });
-
-    const verificationLink = buildVerificationLink(
-      resolvedBaseUrl,
-      args.token,
-    );
-
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const from = process.env.TWILIO_WHATSAPP_FROM;
-
-    if (!accountSid || !authToken || !from) {
-      throw new Error("Twilio credentials are not configured.");
-    }
-
-    const to = args.phone.startsWith("whatsapp:")
-      ? args.phone
-      : `whatsapp:${args.phone}`;
-
-    const body = `Your verification link: ${verificationLink}`;
-
-    try {
-      const response = await fetch(
-        `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Basic ${Buffer.from(
-              `${accountSid}:${authToken}`,
-            ).toString("base64")}`,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          body: new URLSearchParams({
-            To: to,
-            From: from,
-            Body: body,
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        await ctx.runMutation(internal.whatsappLogs.logWhatsAppSend, {
-          phone: args.phone,
-          token: args.token,
-          status: "failed",
-          provider: "twilio",
-          error: errorText,
-        });
-        throw new Error("Failed to send WhatsApp message.");
-      }
-
-      const payload = (await response.json()) as { sid?: string };
-      await ctx.runMutation(internal.whatsappLogs.logWhatsAppSend, {
-        phone: args.phone,
-        token: args.token,
-        status: "sent",
-        provider: "twilio",
-        messageSid: payload.sid,
-      });
-
-      return { ok: true };
-    } catch (error) {
-      if (error instanceof Error) {
-        await ctx.runMutation(internal.whatsappLogs.logWhatsAppSend, {
-          phone: args.phone,
-          token: args.token,
-          status: "failed",
-          provider: "twilio",
-          error: error.message,
-        });
-      }
-      throw error;
-    }
   },
 });
