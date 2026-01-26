@@ -1,5 +1,8 @@
 # Task Brief: Phase 1.2 WhatsApp Message Dispatch (Backend)
 
+## Status
+- Completed
+
 ## Goal
 - Send WhatsApp verification links and log send status.
 
