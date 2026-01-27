@@ -1,5 +1,8 @@
 # Task Brief: Phase 1.3 Registration UI (/start) (Frontend)
 
+## Status
+- Completed
+
 ## Goal
 - Let users submit a WhatsApp number to request verification.
 
