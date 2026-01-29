@@ -25,7 +25,11 @@ export default defineSchema({
     createdAt: v.number(),
     error: v.optional(v.string()),
     messageSid: v.optional(v.string()),
+    errorCode: v.optional(v.number()),
+    errorMessage: v.optional(v.string()),
+    statusUpdatedAt: v.optional(v.number()),
   })
     .index("by_phone", ["phone"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_message_sid", ["messageSid"]),
 });

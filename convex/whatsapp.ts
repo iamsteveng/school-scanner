@@ -34,6 +34,7 @@ export async function sendWhatsAppVerification(options: {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken = process.env.TWILIO_AUTH_TOKEN;
   const from = process.env.TWILIO_WHATSAPP_FROM;
+  const statusCallbackUrl = process.env.TWILIO_STATUS_CALLBACK_URL;
 
   if (!accountSid || !authToken || !from) {
     throw new Error("Twilio credentials are not configured.");
@@ -60,6 +61,12 @@ export async function sendWhatsAppVerification(options: {
           To: to,
           From: from,
           Body: body,
+          ...(statusCallbackUrl
+            ? {
+                StatusCallback: statusCallbackUrl,
+                StatusCallbackMethod: "POST",
+              }
+            : {}),
         }),
       },
     );
