@@ -19,6 +19,7 @@ import type * as verificationMutations from "../verificationMutations.js";
 import type * as verificationTokens from "../verificationTokens.js";
 import type * as whatsapp from "../whatsapp.js";
 import type * as whatsappLogs from "../whatsappLogs.js";
+import type * as whatsappStatus from "../whatsappStatus.js";
 
 import type {
   ApiFromModules,
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   verificationTokens: typeof verificationTokens;
   whatsapp: typeof whatsapp;
   whatsappLogs: typeof whatsappLogs;
+  whatsappStatus: typeof whatsappStatus;
 }>;
 
 /**
