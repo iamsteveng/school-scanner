@@ -1,3 +1,5 @@
+"use node";
+
 import { createHmac } from "node:crypto";
 
 type JwtPayload = {
