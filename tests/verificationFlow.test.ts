@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { MutationCtx } from "../convex/_generated/server";
-import { consumeVerificationLinkHandler } from "../convex/verificationFlow";
+import { consumeVerificationLinkHandler } from "../convex/verificationMutations";
 import { createVerificationTokenHandler } from "../convex/verificationTokens";
 
 type TokenDoc = {
