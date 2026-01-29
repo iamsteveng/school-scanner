@@ -1,7 +1,7 @@
 # Task Brief: Phase 1.4 Verification Link Handling (/v/:token) (Backend)
 
 ## Status
-- In progress
+- Completed
 
 ## Goal
 - Validate verification links and create a verified session.
@@ -19,11 +19,13 @@
 ## Data + Auth Assumptions
 - `verification_tokens` table is source of truth.
 - Phone number is used to identify existing vs new user (exact matching on E.164).
-- Session mechanism uses Convex auth or a custom session token (TBD).
+- Session mechanism is a signed JWT (30-day TTL) returned from backend.
+- Verification creates a `users` record if missing.
+- Requires `JWT_SECRET` in Convex env.
 
 ## Backend (Convex) Functions
-- Action or mutation to consume token and return routing directive.
-- Possibly create a session token or set auth state (TBD).
+- Mutation `consumeVerificationLink` consumes token and upserts user.
+- Action `consumeVerificationLinkAction` signs JWT and returns redirect.
 
 ## Frontend Components / Pages
 - `/v/:token` page will call backend and redirect (handled in 1.5).
@@ -46,6 +48,4 @@
 - Token invalid after use.
 
 ## Open Questions
-- What constitutes “existing user” (which table/field)?
-- What session mechanism should be used (Convex auth vs custom session token)?
-- Should verification create a user record if missing, or defer to `/schools` flow?
+- None.

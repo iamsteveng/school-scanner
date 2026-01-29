@@ -2,6 +2,12 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+  users: defineTable({
+    phone: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    verifiedAt: v.optional(v.number()),
+  }).index("by_phone", ["phone"]),
   verification_tokens: defineTable({
     token: v.string(),
     phone: v.string(),
