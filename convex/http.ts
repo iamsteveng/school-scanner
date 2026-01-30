@@ -53,15 +53,28 @@ router.route({
       payload,
       authToken,
     );
-    if (!signature || computed !== signature) {
-      return new Response("Invalid signature", { status: 403 });
-    }
-
     const messageSid = payload.MessageSid;
     const status = payload.MessageStatus ?? payload.SmsStatus ?? "unknown";
     const errorCode = payload.ErrorCode ? Number(payload.ErrorCode) : undefined;
     const errorMessage = payload.ErrorMessage || undefined;
     const to = payload.To?.replace(/^whatsapp:/i, "") ?? undefined;
+    const signatureValid = Boolean(signature) && computed === signature;
+
+    await ctx.runMutation(internal.whatsappLogs.logWhatsAppWebhook, {
+      receivedAt: Date.now(),
+      messageSid,
+      status,
+      errorCode,
+      errorMessage,
+      to,
+      signatureValid,
+      requestUrl: request.url,
+      rawBody: body,
+    });
+
+    if (!signatureValid) {
+      return new Response("Invalid signature", { status: 403 });
+    }
 
     if (!messageSid) {
       return new Response("Missing MessageSid", { status: 400 });

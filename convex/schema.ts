@@ -32,4 +32,15 @@ export default defineSchema({
     .index("by_phone", ["phone"])
     .index("by_status", ["status"])
     .index("by_message_sid", ["messageSid"]),
+  whatsapp_webhook_logs: defineTable({
+    receivedAt: v.number(),
+    messageSid: v.optional(v.string()),
+    status: v.optional(v.string()),
+    errorCode: v.optional(v.number()),
+    errorMessage: v.optional(v.string()),
+    to: v.optional(v.string()),
+    signatureValid: v.boolean(),
+    requestUrl: v.string(),
+    rawBody: v.string(),
+  }).index("by_message_sid", ["messageSid"]),
 });

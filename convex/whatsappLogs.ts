@@ -62,6 +62,23 @@ export const updateWhatsAppStatus = internalMutation({
   },
 });
 
+export const logWhatsAppWebhook = internalMutation({
+  args: {
+    receivedAt: v.number(),
+    messageSid: v.optional(v.string()),
+    status: v.optional(v.string()),
+    errorCode: v.optional(v.number()),
+    errorMessage: v.optional(v.string()),
+    to: v.optional(v.string()),
+    signatureValid: v.boolean(),
+    requestUrl: v.string(),
+    rawBody: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("whatsapp_webhook_logs", args);
+  },
+});
+
 export const listRecentMessageLogs = internalQuery({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {

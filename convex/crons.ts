@@ -10,11 +10,6 @@ crons.interval(
   { label: "dev-noop" },
 );
 
-crons.interval(
-  "sync-whatsapp-statuses",
-  { minutes: 5 },
-  internal.whatsappStatus.syncTwilioStatuses,
-  {},
-);
+// Temporarily disabled: Twilio status polling.
 
 export default crons;
