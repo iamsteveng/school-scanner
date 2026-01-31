@@ -22,12 +22,15 @@ export const syncTwilioStatuses = internalAction({
     const cutoff = Date.now() - LOOKBACK_MS;
     const pending = recent.filter(
       (log) =>
-        log.messageSid &&
+        typeof log.messageSid === "string" &&
         !log.statusUpdatedAt &&
         log.createdAt >= cutoff,
     );
 
     for (const log of pending) {
+      if (!log.messageSid) {
+        continue;
+      }
       const response = await fetch(
         `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages/${log.messageSid}.json`,
         {
