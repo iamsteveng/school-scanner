@@ -22,3 +22,59 @@ export const logWhatsAppSend = internalMutation({
     });
   },
 });
+
+export const updateWhatsAppStatus = internalMutation({
+  args: {
+    messageSid: v.string(),
+    status: v.string(),
+    errorCode: v.optional(v.number()),
+    errorMessage: v.optional(v.string()),
+    to: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("whatsapp_message_logs")
+      .withIndex("by_message_sid", (q) => q.eq("messageSid", args.messageSid))
+      .unique();
+
+    const now = Date.now();
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        status: args.status,
+        errorCode: args.errorCode,
+        errorMessage: args.errorMessage,
+        statusUpdatedAt: now,
+      });
+      return;
+    }
+
+    await ctx.db.insert("whatsapp_message_logs", {
+      phone: args.to ?? "",
+      token: "status_callback",
+      status: args.status,
+      provider: "twilio",
+      createdAt: now,
+      errorCode: args.errorCode,
+      errorMessage: args.errorMessage,
+      statusUpdatedAt: now,
+      messageSid: args.messageSid,
+    });
+  },
+});
+
+export const logWhatsAppWebhook = internalMutation({
+  args: {
+    receivedAt: v.number(),
+    messageSid: v.optional(v.string()),
+    status: v.optional(v.string()),
+    errorCode: v.optional(v.number()),
+    errorMessage: v.optional(v.string()),
+    to: v.optional(v.string()),
+    signatureValid: v.boolean(),
+    requestUrl: v.string(),
+    rawBody: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("whatsapp_webhook_logs", args);
+  },
+});
