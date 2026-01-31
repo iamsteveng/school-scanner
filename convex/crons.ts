@@ -10,6 +10,4 @@ crons.interval(
   { label: "dev-noop" },
 );
 
-// Temporarily disabled: Twilio status polling.
-
 export default crons;

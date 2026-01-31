@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internalMutation, internalQuery } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
 
 export const logWhatsAppSend = internalMutation({
   args: {
@@ -76,16 +76,5 @@ export const logWhatsAppWebhook = internalMutation({
   },
   handler: async (ctx, args) => {
     await ctx.db.insert("whatsapp_webhook_logs", args);
-  },
-});
-
-export const listRecentMessageLogs = internalQuery({
-  args: { limit: v.optional(v.number()) },
-  handler: async (ctx, args) => {
-    const limit = args.limit ?? 50;
-    return ctx.db
-      .query("whatsapp_message_logs")
-      .order("desc")
-      .take(limit);
   },
 });
