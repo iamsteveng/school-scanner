@@ -5,11 +5,11 @@ import VerifyTokenPage from "../src/app/v/[token]/page";
 const replaceMock = vi.fn();
 const useActionMock = vi.fn();
 
+const useParamsMock = vi.fn();
+
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: replaceMock }),
-  useSearchParams: () => ({
-    get: () => null,
-  }),
+  useParams: () => useParamsMock(),
 }));
 
 vi.mock("convex/react", () => ({
@@ -20,6 +20,7 @@ describe("/v/[token] verification redirect", () => {
   beforeEach(() => {
     replaceMock.mockReset();
     useActionMock.mockReset();
+    useParamsMock.mockReset();
     vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
@@ -31,7 +32,9 @@ describe("/v/[token] verification redirect", () => {
     });
     useActionMock.mockReturnValue(actionMock);
 
-    render(<VerifyTokenPage params={{ token: "valid-token" }} />);
+    useParamsMock.mockReturnValue({ token: "valid-token" });
+
+    render(<VerifyTokenPage />);
 
     expect(
       screen.getByText(/checking your verification link/i),
@@ -53,7 +56,9 @@ describe("/v/[token] verification redirect", () => {
       .mockRejectedValue(new Error("Invalid token."));
     useActionMock.mockReturnValue(actionMock);
 
-    render(<VerifyTokenPage params={{ token: "bad-token" }} />);
+    useParamsMock.mockReturnValue({ token: "bad-token" });
+
+    render(<VerifyTokenPage />);
 
     expect(
       await screen.findByText(/couldn't verify that link/i),

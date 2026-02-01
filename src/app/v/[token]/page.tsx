@@ -2,7 +2,7 @@
 
 import { useAction } from "convex/react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 
@@ -24,12 +24,9 @@ function stringifyError(err: unknown): string {
   }
 }
 
-export default function VerifyTokenPage({
-  params,
-}: {
-  params: { token?: string };
-}) {
+export default function VerifyTokenPage() {
   const router = useRouter();
+  const params = useParams<{ token?: string }>();
 
   const debugEnabled = useMemo(() => {
     // Note: this is a Client Component, but it can still be pre-rendered on the server.
