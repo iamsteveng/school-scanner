@@ -83,10 +83,18 @@ export default function VerifyTokenPage({
           return;
         }
 
+        const baseDebug = debugEnabled
+          ? [
+              `token: ${token}`,
+              `convexUrl: ${process.env.NEXT_PUBLIC_CONVEX_URL ?? "(unset)"}`,
+              `error: ${stringifyError(err)}`,
+            ].join("\n")
+          : undefined;
+
         setState({
           status: "error",
           message: DEFAULT_ERROR_MESSAGE,
-          debugDetails: debugEnabled ? stringifyError(err) : undefined,
+          debugDetails: baseDebug,
         });
       }
     };
