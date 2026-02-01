@@ -3,7 +3,7 @@
 import { useAction } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 
 type VerificationState =
@@ -31,14 +31,14 @@ export default function VerifyTokenPage({
 }) {
   const router = useRouter();
 
-  const [debugEnabled, setDebugEnabled] = useState(false);
-
-  useEffect(() => {
+  const debugEnabled = useMemo(() => {
+    // Note: this is a Client Component, but it can still be pre-rendered on the server.
+    // We want debug to be enabled only when the browser is present.
     if (typeof window === "undefined") {
-      return;
+      return false;
     }
     const value = new URLSearchParams(window.location.search).get("debug");
-    setDebugEnabled(value === "1" || value === "true");
+    return value === "1" || value === "true";
   }, []);
 
   const consumeVerificationLink = useAction(
