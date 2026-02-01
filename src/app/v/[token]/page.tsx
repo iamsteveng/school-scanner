@@ -3,7 +3,7 @@
 import { useAction } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 
 type VerificationState =
@@ -31,9 +31,9 @@ export default function VerifyTokenPage({
 }) {
   const router = useRouter();
 
-  const debugEnabled = useMemo(() => {
-    // useSearchParams can be unreliable during certain protected/redirect flows.
-    // For a debug-only flag, reading from window.location is the most robust.
+  const isDebugEnabled = useCallback(() => {
+    // Important: avoid memoizing this at render time because this Client Component
+    // may still be pre-rendered on the server, where `window` is undefined.
     if (typeof window === "undefined") {
       return false;
     }
@@ -83,6 +83,7 @@ export default function VerifyTokenPage({
           return;
         }
 
+        const debugEnabled = isDebugEnabled();
         const baseDebug = debugEnabled
           ? [
               `token: ${token}`,
@@ -104,7 +105,7 @@ export default function VerifyTokenPage({
     return () => {
       isActive = false;
     };
-  }, [attempt, consumeVerificationLink, debugEnabled, params?.token, router]);
+  }, [attempt, consumeVerificationLink, isDebugEnabled, params?.token, router]);
 
   if (state.status === "error") {
     return (
