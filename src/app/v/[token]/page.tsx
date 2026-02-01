@@ -1,17 +1,28 @@
 "use client";
 
 import { useAction } from "convex/react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 
 type VerificationState =
   | { status: "loading" }
-  | { status: "error"; message: string };
+  | { status: "error"; message: string; debugDetails?: string };
 
 const DEFAULT_ERROR_MESSAGE =
   "That verification link is invalid or has expired. Please request a new one.";
+
+function stringifyError(err: unknown): string {
+  if (err instanceof Error) {
+    return err.stack ?? err.message;
+  }
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return String(err);
+  }
+}
 
 export default function VerifyTokenPage({
   params,
@@ -19,12 +30,24 @@ export default function VerifyTokenPage({
   params: { token?: string };
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const debugEnabled = useMemo(() => {
+    const value = searchParams?.get("debug");
+    return value === "1" || value === "true";
+  }, [searchParams]);
+
   const consumeVerificationLink = useAction(
     api.verificationActions.consumeVerificationLinkAction,
   );
-  const [state, setState] = useState<VerificationState>({
-    status: "loading",
-  });
+
+  const [state, setState] = useState<VerificationState>({ status: "loading" });
+  const [attempt, setAttempt] = useState(0);
+
+  const retry = useCallback(() => {
+    setState({ status: "loading" });
+    setAttempt((prev) => prev + 1);
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -44,12 +67,23 @@ export default function VerifyTokenPage({
           return;
         }
         router.replace(result.redirectTo ?? "/start");
-      } catch {
+      } catch (err) {
+        // Keep UI calm, but don't hide the real cause when debug is enabled.
+        // This helps diagnose Convex client/config issues vs truly expired tokens.
+        // Note: never display the returned session JWT on this page.
+        // (We only log/display the error object.)
+        // eslint-disable-next-line no-console
+        console.error("Verification failed", err);
+
         if (!isActive) {
           return;
         }
-        const message = DEFAULT_ERROR_MESSAGE;
-        setState({ status: "error", message });
+
+        setState({
+          status: "error",
+          message: DEFAULT_ERROR_MESSAGE,
+          debugDetails: debugEnabled ? stringifyError(err) : undefined,
+        });
       }
     };
 
@@ -58,7 +92,7 @@ export default function VerifyTokenPage({
     return () => {
       isActive = false;
     };
-  }, [consumeVerificationLink, params?.token, router]);
+  }, [attempt, consumeVerificationLink, debugEnabled, params?.token, router]);
 
   if (state.status === "error") {
     return (
@@ -71,16 +105,36 @@ export default function VerifyTokenPage({
             <h1 className="mt-3 text-3xl font-semibold text-slate-900">
               We couldn&apos;t verify that link.
             </h1>
-            <p className="mt-3 text-base text-slate-600">
-              {state.message}
-            </p>
+            <p className="mt-3 text-base text-slate-600">{state.message}</p>
+
+            {state.debugDetails ? (
+              <details className="mt-5 w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700">
+                <summary className="cursor-pointer select-none font-semibold text-slate-800">
+                  Debug details
+                </summary>
+                <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap break-words text-xs text-slate-600">
+                  {state.debugDetails}
+                </pre>
+              </details>
+            ) : null}
           </div>
-          <Link
-            href="/start"
-            className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500"
-          >
-            Request a new link
-          </Link>
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={retry}
+              className="inline-flex items-center justify-center rounded-full border border-emerald-200 bg-white px-5 py-2 text-sm font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-50"
+            >
+              Retry verification
+            </button>
+
+            <Link
+              href="/start"
+              className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500"
+            >
+              Request a new link
+            </Link>
+          </div>
         </div>
       </main>
     );

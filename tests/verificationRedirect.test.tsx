@@ -7,6 +7,9 @@ const useActionMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: replaceMock }),
+  useSearchParams: () => ({
+    get: () => null,
+  }),
 }));
 
 vi.mock("convex/react", () => ({
@@ -17,9 +20,11 @@ describe("/v/[token] verification redirect", () => {
   beforeEach(() => {
     replaceMock.mockReset();
     useActionMock.mockReset();
+    vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
   it("shows loading state and redirects on success", async () => {
+    vi.mocked(console.error).mockClear();
     const actionMock = vi.fn().mockResolvedValue({
       token: "session-token",
       redirectTo: "/schools",
@@ -42,6 +47,7 @@ describe("/v/[token] verification redirect", () => {
   });
 
   it("renders error UI and retry CTA on failure", async () => {
+    vi.mocked(console.error).mockClear();
     const actionMock = vi
       .fn()
       .mockRejectedValue(new Error("Invalid token."));
