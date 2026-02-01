@@ -31,14 +31,14 @@ export default function VerifyTokenPage({
 }) {
   const router = useRouter();
 
-  const isDebugEnabled = useCallback(() => {
-    // Important: avoid memoizing this at render time because this Client Component
-    // may still be pre-rendered on the server, where `window` is undefined.
+  const [debugEnabled, setDebugEnabled] = useState(false);
+
+  useEffect(() => {
     if (typeof window === "undefined") {
-      return false;
+      return;
     }
     const value = new URLSearchParams(window.location.search).get("debug");
-    return value === "1" || value === "true";
+    setDebugEnabled(value === "1" || value === "true");
   }, []);
 
   const consumeVerificationLink = useAction(
@@ -83,7 +83,6 @@ export default function VerifyTokenPage({
           return;
         }
 
-        const debugEnabled = isDebugEnabled();
         const baseDebug = debugEnabled
           ? [
               `token: ${token}`,
@@ -105,7 +104,7 @@ export default function VerifyTokenPage({
     return () => {
       isActive = false;
     };
-  }, [attempt, consumeVerificationLink, isDebugEnabled, params?.token, router]);
+  }, [attempt, consumeVerificationLink, debugEnabled, params?.token, router]);
 
   if (state.status === "error") {
     return (
