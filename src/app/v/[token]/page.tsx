@@ -2,7 +2,7 @@
 
 import { useAction } from "convex/react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { api } from "../../../../convex/_generated/api";
 
@@ -30,12 +30,16 @@ export default function VerifyTokenPage({
   params: { token?: string };
 }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const debugEnabled = useMemo(() => {
-    const value = searchParams?.get("debug");
+    // useSearchParams can be unreliable during certain protected/redirect flows.
+    // For a debug-only flag, reading from window.location is the most robust.
+    if (typeof window === "undefined") {
+      return false;
+    }
+    const value = new URLSearchParams(window.location.search).get("debug");
     return value === "1" || value === "true";
-  }, [searchParams]);
+  }, []);
 
   const consumeVerificationLink = useAction(
     api.verificationActions.consumeVerificationLinkAction,
