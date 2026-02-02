@@ -8,6 +8,7 @@ export const listSchools = query({
     level: v.optional(v.string()),
     type: v.optional(v.string()),
     district: v.optional(v.string()),
+    qDistrictZh: v.optional(v.string()),
     q: v.optional(v.string()),
     limit: v.optional(v.number()),
   },
@@ -15,6 +16,7 @@ export const listSchools = query({
     const level = args.level ? normalize(args.level) : undefined;
     const type = args.type ? normalize(args.type) : undefined;
     const district = args.district ? normalize(args.district) : undefined;
+    void args.qDistrictZh;
     const q = args.q ? normalize(args.q).toLowerCase() : undefined;
     const limit = args.limit ?? 200;
 
@@ -24,13 +26,13 @@ export const listSchools = query({
       schools = await ctx.db
         .query("schools")
         .withIndex("by_level_type_district", (q) =>
-          q.eq("level", level).eq("type", type).eq("district", district),
+          q.eq("level", level).eq("type", type).eq("districtEn", district),
         )
         .take(limit);
     } else if (district) {
       schools = await ctx.db
         .query("schools")
-        .withIndex("by_district", (q) => q.eq("district", district))
+        .withIndex("by_district", (q) => q.eq("districtEn", district))
         .take(limit);
     } else if (level) {
       schools = await ctx.db

@@ -3,8 +3,10 @@
  * Build primary-school seed data from official HKSAR CSDI / data.gov.hk datasets.
  *
  * Sources are ZIP files containing a single CSV.
- * We normalize into the minimal schema fields used by Convex `schools` table:
- *   nameEn, nameZh, level, type, district, websiteUrl
+ * We normalize into the schema fields used by Convex `schools` table:
+ *   nameEn, nameZh, level, type,
+ *   districtEn/districtZh, genderEn/genderZh, religionEn/religionZh,
+ *   addressEn/addressZh, latitude/longitude, websiteUrl, sourceLastUpdate
  *
  * Run:
  *   node scripts/buildPrimarySchoolsSeed.mjs
@@ -122,10 +124,10 @@ function normalizeDistrict(d) {
   return String(d ?? "").trim().toUpperCase();
 }
 
-function makeDedupeKey({ nameEn, nameZh, district, websiteUrl }) {
+function makeDedupeKey({ nameEn, nameZh, districtEn, websiteUrl }) {
   const website = (websiteUrl || "").trim().toLowerCase();
   if (website) return `url:${website}`;
-  return `name:${nameEn.toLowerCase()}|${nameZh.toLowerCase()}|${district.toLowerCase()}`;
+  return `name:${nameEn.toLowerCase()}|${nameZh.toLowerCase()}|${(districtEn || "").toLowerCase()}`;
 }
 
 async function download(url, outPath) {
@@ -166,21 +168,36 @@ function parseEdBSchoolCsv(csvText, { type }) {
 
     const websiteUrl = pickWebsiteUrl(row);
 
+    const latitude = row.LATITUDE ? Number(row.LATITUDE) : undefined;
+    const longitude = row.LONGITUDE ? Number(row.LONGITUDE) : undefined;
+
     rows.push({
       nameEn,
       nameZh,
       level: normalizeLevel(row.SEARCH04_EN ?? "PRIMARY"),
       type: normalizeType(type ?? row.SEARCH05_EN),
-      district: normalizeDistrict(row.SEARCH03_EN ?? ""),
+
+      districtEn: normalizeDistrict(row.SEARCH03_EN ?? ""),
+      districtZh: (row.SEARCH03_TC ?? "").trim(),
+
+      genderEn: (row.SEARCH01_EN ?? "").trim() || undefined,
+      genderZh: (row.SEARCH01_TC ?? "").trim() || undefined,
+
+      religionEn: (row.NSEARCH01_EN ?? "").trim() || undefined,
+      religionZh: (row.NSEARCH01_TC ?? "").trim() || undefined,
+
+      addressEn: (row.ADDRESS_EN ?? "").trim() || undefined,
+      addressZh: (row.ADDRESS_TC ?? "").trim() || undefined,
+
+      latitude: Number.isFinite(latitude) ? latitude : undefined,
+      longitude: Number.isFinite(longitude) ? longitude : undefined,
+
       websiteUrl,
-      // keep a few useful extras for future expansion
+      sourceLastUpdate: (row.LASTUPDATE ?? "").trim() || undefined,
+
+      // Keep extras for future expansion/debugging.
       _source: {
         datasetEn: row.DATASET_EN,
-        addressEn: row.ADDRESS_EN,
-        addressZh: row.ADDRESS_TC,
-        latitude: row.LATITUDE,
-        longitude: row.LONGITUDE,
-        lastUpdate: row.LASTUPDATE,
       },
     });
   }
