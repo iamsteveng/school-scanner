@@ -288,16 +288,26 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
             contentHash,
           });
 
-          if (changeType === "NEW" || changeType === "UPDATED") {
+          const now = Date.now();
+          const existingAnnouncement = await ctx.runQuery(
+            api.monitoringQueries.getAnnouncementBySchoolAndUrl,
+            { schoolId: school._id, url: u },
+          );
+
+          if (changeType === "NO_CHANGE") {
+            // If this page was previously considered an announcement page, keep it "fresh" without spamming.
+            if (existingAnnouncement) {
+              await ctx.runMutation(api.monitoringMutations.touchAnnouncement, {
+                announcementId: existingAnnouncement._id,
+                lastSeenAt: now,
+                changeType: "NO_CHANGE",
+              });
+            }
+          } else {
+            // NEW or UPDATED
             const title = `${school.nameEn} update`;
             const contentText = text.slice(0, 2000);
             const announcementHash = contentHash ?? simpleHash(contentText);
-
-            const now = Date.now();
-            const existingAnnouncement = await ctx.runQuery(
-              api.monitoringQueries.getAnnouncementBySchoolAndUrl,
-              { schoolId: school._id, url: u },
-            );
 
             // If we already have an announcement row for this page, treat this update as UPDATED.
             const finalChangeType = existingAnnouncement ? "UPDATED" : changeType;

@@ -92,6 +92,20 @@ export const upsertAnnouncementBySchoolAndUrl = mutation({
   },
 });
 
+export const touchAnnouncement = mutation({
+  args: {
+    announcementId: v.id("announcements"),
+    lastSeenAt: v.number(),
+    changeType: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.announcementId, {
+      lastSeenAt: args.lastSeenAt,
+      changeType: args.changeType,
+    });
+  },
+});
+
 export const patchSchoolWebsiteCheck = mutation({
   args: {
     schoolId: v.id("schools"),
