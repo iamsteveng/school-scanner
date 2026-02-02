@@ -43,4 +43,19 @@ export default defineSchema({
     requestUrl: v.string(),
     rawBody: v.string(),
   }).index("by_message_sid", ["messageSid"]),
+
+  schools: defineTable({
+    nameEn: v.string(),
+    nameZh: v.string(),
+    level: v.string(),
+    type: v.string(),
+    district: v.string(),
+    websiteUrl: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_level", ["level"])
+    .index("by_type", ["type"])
+    .index("by_district", ["district"])
+    .index("by_level_type_district", ["level", "type", "district"]),
 });
