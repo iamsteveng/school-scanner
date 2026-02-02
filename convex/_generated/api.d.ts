@@ -13,6 +13,7 @@ import type * as health from "../health.js";
 import type * as http from "../http.js";
 import type * as jobs from "../jobs.js";
 import type * as jwt from "../jwt.js";
+import type * as schools from "../schools.js";
 import type * as verificationActions from "../verificationActions.js";
 import type * as verificationFlow from "../verificationFlow.js";
 import type * as verificationMutations from "../verificationMutations.js";
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   jobs: typeof jobs;
   jwt: typeof jwt;
+  schools: typeof schools;
   verificationActions: typeof verificationActions;
   verificationFlow: typeof verificationFlow;
   verificationMutations: typeof verificationMutations;
