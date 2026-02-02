@@ -195,10 +195,7 @@ function parseEdBSchoolCsv(csvText, { type }) {
       websiteUrl,
       sourceLastUpdate: (row.LASTUPDATE ?? "").trim() || undefined,
 
-      // Keep extras for future expansion/debugging.
-      _source: {
-        datasetEn: row.DATASET_EN,
-      },
+      // Note: intentionally omit any extra fields not in the Convex validator.
     });
   }
 

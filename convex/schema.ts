@@ -75,4 +75,42 @@ export default defineSchema({
     .index("by_type", ["type"])
     .index("by_district", ["districtEn"])
     .index("by_level_type_district", ["level", "type", "districtEn"]),
+
+  monitoring_runs: defineTable({
+    startedAt: v.number(),
+    finishedAt: v.optional(v.number()),
+    status: v.string(),
+    schoolsChecked: v.number(),
+    pagesFetched: v.number(),
+    changesNew: v.number(),
+    changesUpdated: v.number(),
+    changesNone: v.number(),
+    errors: v.number(),
+  }),
+
+  school_page_snapshots: defineTable({
+    schoolId: v.id("schools"),
+    url: v.string(),
+    fetchedAt: v.number(),
+    statusCode: v.optional(v.number()),
+    contentType: v.optional(v.string()),
+    contentHash: v.optional(v.string()),
+    text: v.optional(v.string()),
+    error: v.optional(v.string()),
+  })
+    .index("by_school", ["schoolId"])
+    .index("by_school_url", ["schoolId", "url"]),
+
+  announcements: defineTable({
+    schoolId: v.id("schools"),
+    url: v.string(),
+    title: v.string(),
+    contentText: v.string(),
+    contentHash: v.string(),
+    firstSeenAt: v.number(),
+    lastSeenAt: v.number(),
+    changeType: v.string(),
+  })
+    .index("by_school", ["schoolId"])
+    .index("by_school_url", ["schoolId", "url"]),
 });
