@@ -86,6 +86,10 @@ function extractCandidateLinks(html: string, baseUrl: string): string[] {
   return [...out].slice(0, 8);
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function tryDiscoverFromSitemap(rootUrl: string): Promise<string[]> {
   try {
     const u = new URL(rootUrl);
@@ -132,12 +136,37 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
     const startedAt = Date.now();
     const { api } = await import("./_generated/api");
 
+    // Crawl policy (MVP): keep it gentle.
+    const perDomainDelayMs = 800;
+    const lastFetchAtByDomain = new Map<string, number>();
+
+    const fetchWithPolicy = async (url: string) => {
+      let domain = "";
+      try {
+        domain = new URL(url).host;
+      } catch {
+        domain = "";
+      }
+
+      const now = Date.now();
+      const last = domain ? lastFetchAtByDomain.get(domain) : undefined;
+      if (domain && last != null) {
+        const waitMs = perDomainDelayMs - (now - last);
+        if (waitMs > 0) await sleep(waitMs);
+      }
+
+      const resp = await fetch(url, { redirect: "follow" });
+      if (domain) lastFetchAtByDomain.set(domain, Date.now());
+      return resp;
+    };
+
     const runId = await ctx.runMutation(api.monitoringMutations.createMonitoringRun, {
       startedAt,
     });
 
     const limitSchools = args.limitSchools ?? 20;
     const limitPagesPerSchool = args.limitPagesPerSchool ?? 3;
+    const maxPagesPerRun = 150;
 
     const schools = await ctx.runQuery(api.monitoringQueries.getSchoolsForMonitoring, {
       limit: limitSchools,
@@ -153,16 +182,21 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
     for (const school of schools) {
       schoolsChecked += 1;
       const rootUrl = school.websiteUrl;
+
+      // Tiny delay between schools to avoid bursts even across domains.
+      await sleep(100);
       if (!rootUrl) {
         errors += 1;
         continue;
       }
 
+      if (pagesFetched >= maxPagesPerRun) break;
+
       const urlsToFetch: string[] = [rootUrl];
       let rootHtml = "";
 
       try {
-        const resp = await fetch(rootUrl, { redirect: "follow" });
+        const resp = await fetchWithPolicy(rootUrl);
         const contentType = resp.headers.get("content-type") ?? undefined;
         const statusCode = resp.status;
         rootHtml = await resp.text();
@@ -219,8 +253,9 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
       }
 
       for (const u of urlsToFetch.slice(1, limitPagesPerSchool)) {
+        if (pagesFetched >= maxPagesPerRun) break;
         try {
-          const resp = await fetch(u, { redirect: "follow" });
+          const resp = await fetchWithPolicy(u);
           const contentType = resp.headers.get("content-type") ?? undefined;
           const statusCode = resp.status;
           const html = await resp.text();
