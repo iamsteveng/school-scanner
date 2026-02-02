@@ -247,6 +247,38 @@ Uses: WhatsApp
 
 ---
 
+### 2.1a School Master Data Enrichment + Monthly Refresh (Backend)
+
+**Target Outcome**
+
+* Store key metadata useful for filtering and map display, and keep the school list up to date monthly.
+
+**Tasks**
+
+* Extend `schools` data model to include:
+
+  * 男女校 (co-ed/gender) — `SEARCH01_EN`, `SEARCH01_TC`
+  * district (store both EN/TC) — `SEARCH03_EN`, `SEARCH03_TC`
+  * religion (store both EN/TC) — `NSEARCH01_EN`, `NSEARCH01_TC`
+  * geo coordinates — `LATITUDE`, `LONGITUDE`
+  * (optional but useful) address EN/TC — `ADDRESS_EN`, `ADDRESS_TC`
+
+* Create/update seed pipeline to import HK primary school list from official source (data.gov.hk / CSDI) and write into Convex.
+
+* Add a monthly refresh process:
+
+  * Option A: Convex scheduled job to refresh from a committed JSON snapshot
+  * Option B: External job (CI/cron) to rebuild seed JSON monthly and apply via Convex mutation
+
+**Verification**
+
+* Query can filter by district and type.
+* Schools contain gender + religion fields.
+* Map view can plot lat/long.
+* Refresh can run monthly without manual data entry.
+
+---
+
 ### 2.2 Announcement Scraping / Monitoring Job (Backend)
 
 **Target Outcome**
