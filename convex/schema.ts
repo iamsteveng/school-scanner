@@ -47,15 +47,32 @@ export default defineSchema({
   schools: defineTable({
     nameEn: v.string(),
     nameZh: v.string(),
+
     level: v.string(),
     type: v.string(),
-    district: v.string(),
+
+    districtEn: v.string(),
+    districtZh: v.string(),
+
+    genderEn: v.optional(v.string()),
+    genderZh: v.optional(v.string()),
+
+    religionEn: v.optional(v.string()),
+    religionZh: v.optional(v.string()),
+
+    addressEn: v.optional(v.string()),
+    addressZh: v.optional(v.string()),
+    latitude: v.optional(v.number()),
+    longitude: v.optional(v.number()),
+
     websiteUrl: v.string(),
+    sourceLastUpdate: v.optional(v.string()),
+
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_level", ["level"])
     .index("by_type", ["type"])
-    .index("by_district", ["district"])
-    .index("by_level_type_district", ["level", "type", "district"]),
+    .index("by_district", ["districtEn"])
+    .index("by_level_type_district", ["level", "type", "districtEn"]),
 });

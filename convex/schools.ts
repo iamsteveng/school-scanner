@@ -70,8 +70,22 @@ export const seedSchools = mutation({
         nameZh: v.string(),
         level: v.string(),
         type: v.string(),
-        district: v.string(),
+        districtEn: v.string(),
+        districtZh: v.string(),
+
+        genderEn: v.optional(v.string()),
+        genderZh: v.optional(v.string()),
+
+        religionEn: v.optional(v.string()),
+        religionZh: v.optional(v.string()),
+
+        addressEn: v.optional(v.string()),
+        addressZh: v.optional(v.string()),
+        latitude: v.optional(v.number()),
+        longitude: v.optional(v.number()),
+
         websiteUrl: v.string(),
+        sourceLastUpdate: v.optional(v.string()),
       }),
     ),
     wipeExisting: v.optional(v.boolean()),
