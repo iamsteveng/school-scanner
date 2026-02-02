@@ -1,0 +1,50 @@
+name: Monthly School Seed Refresh
+
+on:
+  schedule:
+    # Run monthly (UTC) on the 1st at 02:00.
+    - cron: "0 2 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh-seed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build HK primary school seed
+        run: node scripts/buildPrimarySchoolsSeed.mjs
+
+      - name: Create PR with refreshed seed
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore: refresh HK primary school seed (monthly)"
+          title: "chore: refresh HK primary school seed (monthly)"
+          body: |
+            Automated monthly refresh of HK primary school seed data.
+
+            Source: data.gov.hk / CSDI (EDB: "School Location and Information")
+
+            This PR updates:
+            - data/seed/hk_primary_schools_seed.json
+
+            After merge, you can run a Convex upsert to apply changes to the database.
+          branch: "chore/monthly-school-seed-refresh"
+          delete-branch: true
+          labels: |
+            data
+            automation

@@ -34,9 +34,9 @@ Current seed file (generated):
 Plan:
 1) Update build script to output the new fields from the CSV.
 2) Update Convex seed mutation to accept the enriched schema.
-3) Monthly refresh:
-   - Preferred: external monthly job (cron/CI) runs build script, commits updated seed JSON (or stores in S3 later), then calls Convex to upsert.
-   - Alternative: Convex scheduled job reads committed JSON snapshot (requires bundling data with the function).
+3) Monthly refresh (GitHub Actions):
+   - A scheduled workflow runs monthly to regenerate `data/seed/hk_primary_schools_seed.json` and open a PR.
+   - After merge, a follow-up step can apply the diff into Convex via an upsert mutation.
 
 ## Verification
 - Schools can be filtered by district/type.
