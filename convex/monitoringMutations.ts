@@ -74,3 +74,20 @@ export const insertAnnouncement = mutation({
     return ctx.db.insert("announcements", args);
   },
 });
+
+export const patchSchoolWebsiteCheck = mutation({
+  args: {
+    schoolId: v.id("schools"),
+    checkedAt: v.number(),
+    statusCode: v.optional(v.number()),
+    error: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.schoolId, {
+      websiteLastCheckedAt: args.checkedAt,
+      websiteLastStatusCode: args.statusCode,
+      websiteLastError: args.error,
+      updatedAt: args.checkedAt,
+    });
+  },
+});

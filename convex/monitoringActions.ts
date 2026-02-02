@@ -58,8 +58,7 @@ function extractCandidateLinks(html: string, baseUrl: string): string[] {
 
 // NOTE: Explicit type annotation avoids a Next.js/TS circular inference issue when typechecking
 // Convex action definitions inside the Next.js app repo.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const runMonitoringOnceAction: any = action({
+export const runMonitoringOnceAction: ReturnType<typeof action> = action({
   args: {
     limitSchools: v.optional(v.number()),
     limitPagesPerSchool: v.optional(v.number()),
@@ -105,24 +104,41 @@ export const runMonitoringOnceAction: any = action({
         const text = stripHtmlToText(rootHtml);
         const contentHash = text ? simpleHash(text) : undefined;
 
+        const fetchedAt = Date.now();
+
         await ctx.runMutation(api.monitoringMutations.insertSchoolPageSnapshot, {
           schoolId: school._id,
           url: rootUrl,
-          fetchedAt: Date.now(),
+          fetchedAt,
           statusCode,
           contentType,
           text,
           contentHash,
         });
 
+        await ctx.runMutation(api.monitoringMutations.patchSchoolWebsiteCheck, {
+          schoolId: school._id,
+          checkedAt: fetchedAt,
+          statusCode,
+        });
+
         pagesFetched += 1;
       } catch (e) {
         errors += 1;
+        const fetchedAt = Date.now();
+        const error = e instanceof Error ? e.message : String(e);
+
         await ctx.runMutation(api.monitoringMutations.insertSchoolPageSnapshot, {
           schoolId: school._id,
           url: rootUrl,
-          fetchedAt: Date.now(),
-          error: e instanceof Error ? e.message : String(e),
+          fetchedAt,
+          error,
+        });
+
+        await ctx.runMutation(api.monitoringMutations.patchSchoolWebsiteCheck, {
+          schoolId: school._id,
+          checkedAt: fetchedAt,
+          error,
         });
         continue;
       }

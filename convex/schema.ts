@@ -68,6 +68,11 @@ export default defineSchema({
     websiteUrl: v.string(),
     sourceLastUpdate: v.optional(v.string()),
 
+    // Monitoring health (MVP)
+    websiteLastCheckedAt: v.optional(v.number()),
+    websiteLastStatusCode: v.optional(v.number()),
+    websiteLastError: v.optional(v.string()),
+
     createdAt: v.number(),
     updatedAt: v.number(),
   })
