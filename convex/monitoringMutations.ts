@@ -59,7 +59,7 @@ export const insertSchoolPageSnapshot = mutation({
   },
 });
 
-export const insertAnnouncement = mutation({
+export const upsertAnnouncementBySchoolAndUrl = mutation({
   args: {
     schoolId: v.id("schools"),
     url: v.string(),
@@ -71,6 +71,23 @@ export const insertAnnouncement = mutation({
     changeType: v.string(),
   },
   handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("announcements")
+      .withIndex("by_school_url", (q) => q.eq("schoolId", args.schoolId).eq("url", args.url))
+      .first();
+
+    if (existing) {
+      // Keep the earliest firstSeenAt; update the rest.
+      await ctx.db.patch(existing._id, {
+        title: args.title,
+        contentText: args.contentText,
+        contentHash: args.contentHash,
+        lastSeenAt: args.lastSeenAt,
+        changeType: args.changeType,
+      });
+      return existing._id;
+    }
+
     return ctx.db.insert("announcements", args);
   },
 });

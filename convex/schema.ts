@@ -117,5 +117,6 @@ export default defineSchema({
     changeType: v.string(),
   })
     .index("by_school", ["schoolId"])
-    .index("by_school_url", ["schoolId", "url"]),
+    .index("by_school_url", ["schoolId", "url"])
+    .index("by_school_hash", ["schoolId", "contentHash"]),
 });

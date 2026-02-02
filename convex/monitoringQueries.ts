@@ -20,3 +20,13 @@ export const getLatestSnapshotHash = query({
     return { contentHash: prev?.contentHash };
   },
 });
+
+export const getAnnouncementBySchoolAndUrl = query({
+  args: { schoolId: v.id("schools"), url: v.string() },
+  handler: async (ctx, args) => {
+    return ctx.db
+      .query("announcements")
+      .withIndex("by_school_url", (q) => q.eq("schoolId", args.schoolId).eq("url", args.url))
+      .first();
+  },
+});

@@ -293,15 +293,24 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
             const contentText = text.slice(0, 2000);
             const announcementHash = contentHash ?? simpleHash(contentText);
 
-            await ctx.runMutation(api.monitoringMutations.insertAnnouncement, {
+            const now = Date.now();
+            const existingAnnouncement = await ctx.runQuery(
+              api.monitoringQueries.getAnnouncementBySchoolAndUrl,
+              { schoolId: school._id, url: u },
+            );
+
+            // If we already have an announcement row for this page, treat this update as UPDATED.
+            const finalChangeType = existingAnnouncement ? "UPDATED" : changeType;
+
+            await ctx.runMutation(api.monitoringMutations.upsertAnnouncementBySchoolAndUrl, {
               schoolId: school._id,
               url: u,
               title,
               contentText,
               contentHash: announcementHash,
-              firstSeenAt: Date.now(),
-              lastSeenAt: Date.now(),
-              changeType,
+              firstSeenAt: existingAnnouncement?.firstSeenAt ?? now,
+              lastSeenAt: now,
+              changeType: finalChangeType,
             });
           }
 
