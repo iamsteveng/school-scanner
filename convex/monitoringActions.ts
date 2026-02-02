@@ -11,6 +11,17 @@ function stripHtmlToText(html: string): string {
     .trim();
 }
 
+function normalizeTextForHash(text: string): string {
+  // Reduce false positives from timestamps/boilerplate.
+  return text
+    .replace(/\b\d{4}[-\/]\d{1,2}[-\/]\d{1,2}\b/g, " ") // 2026-02-02
+    .replace(/\b\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}\b/g, " ") // 02/02/2026
+    .replace(/\b\d{1,2}:\d{2}(?::\d{2})?\b/g, " ") // 12:34
+    .replace(/©\s*\d{4}.*/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function simpleHash(input: string): string {
   let h = 2166136261;
   for (let i = 0; i < input.length; i++) {
@@ -22,7 +33,10 @@ function simpleHash(input: string): string {
 
 function extractCandidateLinks(html: string, baseUrl: string): string[] {
   const out = new Set<string>();
-  const hrefs = [...html.matchAll(/href\s*=\s*"([^"]+)"/gi)].map((m) => m[1]);
+  const hrefs = [
+    ...[...html.matchAll(/href\s*=\s*"([^"]+)"/gi)].map((m) => m[1]),
+    ...[...html.matchAll(/href\s*=\s*'([^']+)'/gi)].map((m) => m[1]),
+  ];
 
   const keywords = [
     "news",
@@ -38,6 +52,13 @@ function extractCandidateLinks(html: string, baseUrl: string): string[] {
     "開放日",
   ];
 
+  let baseOrigin: string | undefined;
+  try {
+    baseOrigin = new URL(baseUrl).origin;
+  } catch {
+    baseOrigin = undefined;
+  }
+
   for (const raw of hrefs) {
     if (!raw || raw.startsWith("#") || raw.startsWith("mailto:")) continue;
     let abs: string;
@@ -47,13 +68,57 @@ function extractCandidateLinks(html: string, baseUrl: string): string[] {
       continue;
     }
 
+    // Avoid crawling off-domain for MVP.
+    if (baseOrigin) {
+      try {
+        if (new URL(abs).origin !== baseOrigin) continue;
+      } catch {
+        continue;
+      }
+    }
+
     const lower = abs.toLowerCase();
     if (keywords.some((k) => lower.includes(k.toLowerCase()))) {
       out.add(abs);
     }
   }
 
-  return [...out].slice(0, 5);
+  return [...out].slice(0, 8);
+}
+
+async function tryDiscoverFromSitemap(rootUrl: string): Promise<string[]> {
+  try {
+    const u = new URL(rootUrl);
+    const sitemapUrl = new URL("/sitemap.xml", u.origin).toString();
+    const resp = await fetch(sitemapUrl, { redirect: "follow" });
+    if (!resp.ok) return [];
+    const xml = await resp.text();
+    const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/gi)].map((m) => m[1]);
+
+    const keywords = [
+      "news",
+      "announcement",
+      "notices",
+      "events",
+      "open-day",
+      "openday",
+      "admission",
+      "%E6%9C%80%E6%96%B0%E6%B6%88%E6%81%AF", // 最新消息
+      "%E9%80%9A%E5%91%8A", // 通告
+      "%E6%B4%BB%E5%8B%95", // 活動
+      "%E5%85%A5%E5%AD%B8", // 入學
+      "%E9%96%8B%E6%94%BE%E6%97%A5", // 開放日
+    ];
+
+    const origin = u.origin;
+    return locs
+      .map((x) => x.trim())
+      .filter((x) => x && x.startsWith(origin))
+      .filter((x) => keywords.some((k) => x.toLowerCase().includes(k)))
+      .slice(0, 5);
+  } catch {
+    return [];
+  }
 }
 
 // NOTE: Explicit type annotation avoids a Next.js/TS circular inference issue when typechecking
@@ -102,7 +167,7 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
         const statusCode = resp.status;
         rootHtml = await resp.text();
         const text = stripHtmlToText(rootHtml);
-        const contentHash = text ? simpleHash(text) : undefined;
+        const contentHash = text ? simpleHash(normalizeTextForHash(text)) : undefined;
 
         const fetchedAt = Date.now();
 
@@ -144,7 +209,12 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
       }
 
       const candidates = rootHtml ? extractCandidateLinks(rootHtml, rootUrl) : [];
-      for (const u of candidates.slice(0, Math.max(0, limitPagesPerSchool - 1))) {
+      const sitemapCandidates = await tryDiscoverFromSitemap(rootUrl);
+
+      for (const u of [...candidates, ...sitemapCandidates].slice(
+        0,
+        Math.max(0, limitPagesPerSchool - 1),
+      )) {
         urlsToFetch.push(u);
       }
 
@@ -155,7 +225,7 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
           const statusCode = resp.status;
           const html = await resp.text();
           const text = stripHtmlToText(html);
-          const contentHash = text ? simpleHash(text) : undefined;
+          const contentHash = text ? simpleHash(normalizeTextForHash(text)) : undefined;
 
           const prev = await ctx.runQuery(api.monitoringQueries.getLatestSnapshotHash, {
             schoolId: school._id,
