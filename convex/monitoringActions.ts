@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { action } from "./_generated/server";
-import { api } from "./_generated/api";
+// Note: avoid importing ./_generated/api at module scope (can create TS circular types in Next build).
 
 function stripHtmlToText(html: string): string {
   return html
@@ -56,13 +56,18 @@ function extractCandidateLinks(html: string, baseUrl: string): string[] {
   return [...out].slice(0, 5);
 }
 
-export const runMonitoringOnceAction = action({
+// NOTE: Explicit type annotation avoids a Next.js/TS circular inference issue when typechecking
+// Convex action definitions inside the Next.js app repo.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const runMonitoringOnceAction: any = action({
   args: {
     limitSchools: v.optional(v.number()),
     limitPagesPerSchool: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const startedAt = Date.now();
+    const { api } = await import("./_generated/api");
+
     const runId = await ctx.runMutation(api.monitoringMutations.createMonitoringRun, {
       startedAt,
     });
