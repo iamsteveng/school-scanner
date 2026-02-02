@@ -3,6 +3,10 @@
 ## Status
 - In progress
 
+## Progress
+- Identified an official seed source for HK primary schools via data.gov.hk / CSDI.
+- Added a script to download/normalize those datasets into a seed JSON file.
+
 ## Goal
 - Create a canonical `schools` dataset in Convex that can be filtered by level/type/district and used by onboarding + monitoring.
 
