@@ -1,7 +1,7 @@
 # Task Brief: Phase 3.2 School Selection Rules Engine (Backend)
 
 ## Status
-- In progress
+- Completed
 
 ## Goal
 - Persist each user’s selected schools.
