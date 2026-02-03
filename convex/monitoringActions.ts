@@ -253,16 +253,19 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
         return resp;
       };
 
+      const classifyError = (e: unknown) => {
+        const msg = e instanceof Error ? e.message : String(e);
+        const looksLikeTls =
+          msg.includes("certificate") ||
+          msg.includes("TLS") ||
+          msg.includes("UNABLE_TO_VERIFY_LEAF_SIGNATURE");
+        return { msg, looksLikeTls };
+      };
+
       try {
         return await doFetch(url);
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-
-        // Common production issue: some HK school sites have broken TLS chains.
-        // We keep this safe by:
-        // 1) trying http:// fallback (if server supports), then
-        // 2) trying a text-proxy fallback (jina.ai) which fetches server-side.
-        const looksLikeTls = msg.includes("certificate") || msg.includes("TLS") || msg.includes("UNABLE_TO_VERIFY_LEAF_SIGNATURE");
+      } catch (e1) {
+        const { looksLikeTls } = classifyError(e1);
 
         if (looksLikeTls) {
           try {
@@ -279,11 +282,20 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
             const proxyUrl = `https://r.jina.ai/${httpsUrl}`;
             return await doFetch(proxyUrl);
           } catch {
-            // ignore; fall through to throw original
+            // ignore
           }
         }
 
-        throw e;
+        // If not TLS, or fallbacks failed, try proxy anyway (covers 403/blocks).
+        try {
+          const httpsUrl = url.replace(/^http:\/\//i, "https://");
+          const proxyUrl = `https://r.jina.ai/${httpsUrl}`;
+          return await doFetch(proxyUrl);
+        } catch {
+          // ignore
+        }
+
+        throw e1;
       }
     };
 
