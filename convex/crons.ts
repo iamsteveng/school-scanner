@@ -10,4 +10,12 @@ crons.interval(
   { label: "dev-noop" },
 );
 
+// MVP cadence: once per 24 hours.
+crons.interval(
+  "monitoring-cron",
+  { hours: 24 },
+  internal.jobs.monitoringCron,
+  { limitSchools: 50, limitPagesPerSchool: 3 },
+);
+
 export default crons;

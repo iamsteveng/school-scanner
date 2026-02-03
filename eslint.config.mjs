@@ -12,6 +12,13 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+
+    // Tooling/build artifacts
+    ".vercel/**",
+    "coverage/**",
+
+    // Convex codegen output (noise in lint; generated in CI via `npx convex codegen`)
+    "convex/_generated/**",
   ]),
 ]);
 
