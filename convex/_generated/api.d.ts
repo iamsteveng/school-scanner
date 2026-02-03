@@ -18,6 +18,8 @@ import type * as monitoringActions from "../monitoringActions.js";
 import type * as monitoringMutations from "../monitoringMutations.js";
 import type * as monitoringQueries from "../monitoringQueries.js";
 import type * as schools from "../schools.js";
+import type * as userSelections from "../userSelections.js";
+import type * as users from "../users.js";
 import type * as verificationActions from "../verificationActions.js";
 import type * as verificationFlow from "../verificationFlow.js";
 import type * as verificationMutations from "../verificationMutations.js";
@@ -42,6 +44,8 @@ declare const fullApi: ApiFromModules<{
   monitoringMutations: typeof monitoringMutations;
   monitoringQueries: typeof monitoringQueries;
   schools: typeof schools;
+  userSelections: typeof userSelections;
+  users: typeof users;
   verificationActions: typeof verificationActions;
   verificationFlow: typeof verificationFlow;
   verificationMutations: typeof verificationMutations;

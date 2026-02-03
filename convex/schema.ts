@@ -4,6 +4,7 @@ import { v } from "convex/values";
 export default defineSchema({
   users: defineTable({
     phone: v.string(),
+    plan: v.optional(v.union(v.literal("FREE"), v.literal("PREMIUM"))),
     createdAt: v.number(),
     updatedAt: v.number(),
     verifiedAt: v.optional(v.number()),
@@ -126,4 +127,12 @@ export default defineSchema({
     .index("by_school", ["schoolId"])
     .index("by_school_url", ["schoolId", "url"])
     .index("by_school_hash", ["schoolId", "contentHash"]),
+
+  user_school_selections: defineTable({
+    userId: v.id("users"),
+    schoolIds: v.array(v.id("schools")),
+    lockedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_user", ["userId"]),
 });
