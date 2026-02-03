@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internalAction, internalMutation } from "./_generated/server";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 
 export const noopCron = internalMutation({
   args: { label: v.optional(v.string()) },
@@ -25,3 +25,13 @@ export const monitoringCron: ReturnType<typeof internalAction> = internalAction(
     });
   },
 });
+
+export const monthlySchoolSeedRefreshCron: ReturnType<typeof internalAction> =
+  internalAction({
+    args: {},
+    handler: async (ctx) => {
+      return await ctx.runMutation(internal.schools.refreshPrimarySchoolsFromSeed, {
+        wipeExisting: true,
+      });
+    },
+  });

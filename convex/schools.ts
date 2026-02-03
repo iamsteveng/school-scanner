@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
+import seedData from "./seed/hk_primary_schools_seed.json";
 
 const normalize = (value: string) => value.trim();
 
@@ -112,5 +113,64 @@ export const seedSchools = mutation({
     }
 
     return { inserted: args.schools.length };
+  },
+});
+
+export const refreshPrimarySchoolsFromSeed = internalMutation({
+  args: {
+    wipeExisting: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    // Seed file is committed to the repo and bundled into Convex functions.
+    // `generatedAt` is an ISO string.
+    const seed = seedData as unknown as {
+      generatedAt: string;
+      schools: Array<{
+        nameEn: string;
+        nameZh: string;
+        level: string;
+        type: string;
+        districtEn: string;
+        districtZh: string;
+        genderEn?: string;
+        genderZh?: string;
+        religionEn?: string;
+        religionZh?: string;
+        addressEn?: string;
+        addressZh?: string;
+        latitude?: number;
+        longitude?: number;
+        websiteUrl: string;
+        sourceLastUpdate?: string;
+      }>;
+    };
+
+    if (!seed?.schools?.length) {
+      throw new Error("Seed file contains no schools");
+    }
+
+    if (args.wipeExisting ?? true) {
+      const existing = await ctx.db.query("schools").collect();
+      for (const row of existing) {
+        await ctx.db.delete(row._id);
+      }
+    }
+
+    const now = Date.now();
+
+    for (const school of seed.schools) {
+      await ctx.db.insert("schools", {
+        ...school,
+        // Keep provenance visible in the table.
+        sourceLastUpdate: school.sourceLastUpdate ?? seed.generatedAt,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    return {
+      inserted: seed.schools.length,
+      seedGeneratedAt: seed.generatedAt,
+    };
   },
 });
