@@ -33,6 +33,7 @@ export async function consumeVerificationLinkHandler(
   } else {
     userId = await ctx.db.insert("users", {
       phone,
+      plan: "FREE",
       createdAt: now,
       updatedAt: now,
       verifiedAt: now,
