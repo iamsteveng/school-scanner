@@ -141,23 +141,56 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
     const lastFetchAtByDomain = new Map<string, number>();
 
     const fetchWithPolicy = async (url: string) => {
-      let domain = "";
+      const doFetch = async (targetUrl: string) => {
+        let domain = "";
+        try {
+          domain = new URL(targetUrl).host;
+        } catch {
+          domain = "";
+        }
+
+        const now = Date.now();
+        const last = domain ? lastFetchAtByDomain.get(domain) : undefined;
+        if (domain && last != null) {
+          const waitMs = perDomainDelayMs - (now - last);
+          if (waitMs > 0) await sleep(waitMs);
+        }
+
+        const resp = await fetch(targetUrl, { redirect: "follow" });
+        if (domain) lastFetchAtByDomain.set(domain, Date.now());
+        return resp;
+      };
+
       try {
-        domain = new URL(url).host;
-      } catch {
-        domain = "";
-      }
+        return await doFetch(url);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
 
-      const now = Date.now();
-      const last = domain ? lastFetchAtByDomain.get(domain) : undefined;
-      if (domain && last != null) {
-        const waitMs = perDomainDelayMs - (now - last);
-        if (waitMs > 0) await sleep(waitMs);
-      }
+        // Common production issue: some HK school sites have broken TLS chains.
+        // We keep this safe by:
+        // 1) trying http:// fallback (if server supports), then
+        // 2) trying a text-proxy fallback (jina.ai) which fetches server-side.
+        const looksLikeTls = msg.includes("certificate") || msg.includes("TLS") || msg.includes("UNABLE_TO_VERIFY_LEAF_SIGNATURE");
 
-      const resp = await fetch(url, { redirect: "follow" });
-      if (domain) lastFetchAtByDomain.set(domain, Date.now());
-      return resp;
+        if (looksLikeTls) {
+          try {
+            const httpUrl = url.replace(/^https:\/\//i, "http://");
+            if (httpUrl !== url) return await doFetch(httpUrl);
+          } catch {
+            // ignore
+          }
+
+          try {
+            // This returns rendered-ish text/HTML and often works even when TLS is broken.
+            const proxyUrl = `https://r.jina.ai/${url}`;
+            return await doFetch(proxyUrl);
+          } catch {
+            // ignore; fall through to throw original
+          }
+        }
+
+        throw e;
+      }
     };
 
     const runId = await ctx.runMutation(api.monitoringMutations.createMonitoringRun, {

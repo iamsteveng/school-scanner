@@ -19,6 +19,8 @@ export const listSchools = query({
     void args.qDistrictZh;
     const q = args.q ? normalize(args.q).toLowerCase() : undefined;
     const limit = args.limit ?? 200;
+    // For substring search (no full-text index yet), we need to scan more than a single page.
+    const scanLimit = q ? Math.max(limit, 5000) : limit;
 
     // Start with the most selective index we can.
     let schools;
@@ -28,24 +30,24 @@ export const listSchools = query({
         .withIndex("by_level_type_district", (q) =>
           q.eq("level", level).eq("type", type).eq("districtEn", district),
         )
-        .take(limit);
+        .take(scanLimit);
     } else if (district) {
       schools = await ctx.db
         .query("schools")
         .withIndex("by_district", (q) => q.eq("districtEn", district))
-        .take(limit);
+        .take(scanLimit);
     } else if (level) {
       schools = await ctx.db
         .query("schools")
         .withIndex("by_level", (q) => q.eq("level", level))
-        .take(limit);
+        .take(scanLimit);
     } else if (type) {
       schools = await ctx.db
         .query("schools")
         .withIndex("by_type", (q) => q.eq("type", type))
-        .take(limit);
+        .take(scanLimit);
     } else {
-      schools = await ctx.db.query("schools").take(limit);
+      schools = await ctx.db.query("schools").take(scanLimit);
     }
 
     if (!q) {
