@@ -131,6 +131,7 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
   args: {
     limitSchools: v.optional(v.number()),
     limitPagesPerSchool: v.optional(v.number()),
+    schoolQuery: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const startedAt = Date.now();
@@ -203,6 +204,7 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
 
     const schools = await ctx.runQuery(api.monitoringQueries.getSchoolsForMonitoring, {
       limit: limitSchools,
+      q: args.schoolQuery,
     });
 
     let schoolsChecked = 0;
