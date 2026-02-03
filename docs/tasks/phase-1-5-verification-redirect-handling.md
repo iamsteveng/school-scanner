@@ -1,7 +1,7 @@
 # Task Brief: Phase 1.5 Verification Redirect Handling (Frontend)
 
 ## Status
-- In progress
+- Completed
 
 ## Goal
 - Provide a smooth, reliable frontend verification flow for `/v/:token`.

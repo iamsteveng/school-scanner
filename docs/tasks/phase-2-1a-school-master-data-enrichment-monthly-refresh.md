@@ -1,7 +1,7 @@
 # Task Brief: Phase 2.1a School Master Data Enrichment + Monthly Refresh (Backend)
 
 ## Status
-- In progress
+- Completed
 
 ## Goal
 - Extend the `schools` dataset with additional metadata useful for filtering and map display.

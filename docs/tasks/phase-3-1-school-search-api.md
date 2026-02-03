@@ -1,7 +1,7 @@
 # Task Brief: Phase 3.1 School Search API (Backend)
 
 ## Status
-- Not started
+- In progress
 
 ## Goal
 - Provide a fast, filterable API for school search used by the `/schools` onboarding UI.
