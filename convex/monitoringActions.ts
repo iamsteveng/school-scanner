@@ -39,12 +39,17 @@ function simpleHash(input: string): string {
   return (h >>> 0).toString(16);
 }
 
-function extractCandidateLinks(html: string, baseUrl: string): string[] {
+function extractCandidateLinks(content: string, baseUrl: string): string[] {
   const out = new Set<string>();
+
+  // HTML hrefs
   const hrefs = [
-    ...[...html.matchAll(/href\s*=\s*"([^"]+)"/gi)].map((m) => m[1]),
-    ...[...html.matchAll(/href\s*=\s*'([^']+)'/gi)].map((m) => m[1]),
+    ...[...content.matchAll(/href\s*=\s*"([^"]+)"/gi)].map((m) => m[1]),
+    ...[...content.matchAll(/href\s*=\s*'([^']+)'/gi)].map((m) => m[1]),
   ];
+
+  // Markdown links (e.g. from r.jina.ai proxy)
+  const mdLinks = [...content.matchAll(/\]\((https?:\/\/[^)\s]+)\)/g)].map((m) => m[1]);
 
   const keywords = [
     "news",
@@ -67,7 +72,7 @@ function extractCandidateLinks(html: string, baseUrl: string): string[] {
     baseOrigin = undefined;
   }
 
-  for (const raw of hrefs) {
+  for (const raw of [...hrefs, ...mdLinks]) {
     if (!raw || raw.startsWith("#") || raw.startsWith("mailto:")) continue;
     let abs: string;
     try {
