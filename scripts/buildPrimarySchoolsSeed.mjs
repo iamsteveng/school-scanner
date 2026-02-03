@@ -241,9 +241,17 @@ async function main() {
   };
 
   const outPath = path.join(OUT_DIR, "hk_primary_schools_seed.json");
-  await fs.writeFile(outPath, JSON.stringify(out, null, 2));
+  const payload = JSON.stringify(out, null, 2);
+  await fs.writeFile(outPath, payload);
+
+  // Also copy into `convex/` so the seed snapshot can be bundled and used by scheduled jobs.
+  const convexSeedDir = path.resolve(__dirname, "../convex/seed");
+  await fs.mkdir(convexSeedDir, { recursive: true });
+  const convexOutPath = path.join(convexSeedDir, "hk_primary_schools_seed.json");
+  await fs.writeFile(convexOutPath, payload);
 
   console.log(`\nWrote: ${outPath}`);
+  console.log(`Copied: ${convexOutPath}`);
   console.log(`Raw rows: ${out.countRaw}`);
   console.log(`Deduped:  ${out.countDeduped}`);
 }

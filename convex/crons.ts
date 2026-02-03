@@ -18,4 +18,13 @@ crons.interval(
   { limitSchools: 50, limitPagesPerSchool: 3 },
 );
 
+// Phase 2.1a: monthly refresh of the schools seed snapshot.
+// (Convex intervals don't support months, so approximate with 30 days.)
+crons.interval(
+  "monthly-school-seed-refresh-cron",
+  { hours: 24 * 30 },
+  internal.jobs.monthlySchoolSeedRefreshCron,
+  {},
+);
+
 export default crons;
