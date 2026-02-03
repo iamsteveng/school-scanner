@@ -41,3 +41,15 @@ export const getAnnouncementBySchoolAndUrl = query({
       .first();
   },
 });
+
+export const listSchoolsNeedingWebsiteReview = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 50;
+    const all = await ctx.db.query("schools").take(5000);
+    return all
+      .filter((s) => s.needsWebsiteReview)
+      .sort((a, b) => (b.websiteLastCheckedAt ?? 0) - (a.websiteLastCheckedAt ?? 0))
+      .slice(0, limit);
+  },
+});

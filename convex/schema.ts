@@ -68,10 +68,17 @@ export default defineSchema({
     websiteUrl: v.string(),
     sourceLastUpdate: v.optional(v.string()),
 
-    // Monitoring health (MVP)
+    // Monitoring health + validation (MVP)
+    announcementsUrl: v.optional(v.string()),
+
     websiteLastCheckedAt: v.optional(v.number()),
     websiteLastStatusCode: v.optional(v.number()),
     websiteLastError: v.optional(v.string()),
+
+    websiteConfidence: v.optional(v.number()),
+    websiteValidationReasons: v.optional(v.array(v.string())),
+    websiteSuggestedAnnouncementUrls: v.optional(v.array(v.string())),
+    needsWebsiteReview: v.optional(v.boolean()),
 
     createdAt: v.number(),
     updatedAt: v.number(),

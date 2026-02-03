@@ -122,3 +122,24 @@ export const patchSchoolWebsiteCheck = mutation({
     });
   },
 });
+
+export const patchSchoolWebsiteValidation = mutation({
+  args: {
+    schoolId: v.id("schools"),
+    checkedAt: v.number(),
+    websiteConfidence: v.number(),
+    reasons: v.array(v.string()),
+    suggestedAnnouncementUrls: v.array(v.string()),
+    needsWebsiteReview: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.schoolId, {
+      websiteLastCheckedAt: args.checkedAt,
+      websiteConfidence: args.websiteConfidence,
+      websiteValidationReasons: args.reasons,
+      websiteSuggestedAnnouncementUrls: args.suggestedAnnouncementUrls,
+      needsWebsiteReview: args.needsWebsiteReview,
+      updatedAt: args.checkedAt,
+    });
+  },
+});

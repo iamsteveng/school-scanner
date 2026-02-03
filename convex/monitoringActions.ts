@@ -2,6 +2,14 @@ import { v } from "convex/values";
 import { action } from "./_generated/server";
 // Note: avoid importing ./_generated/api at module scope (can create TS circular types in Next build).
 
+function normalizeForMatch(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/&amp;/g, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function stripHtmlToText(html: string): string {
   return html
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, " ")
@@ -88,6 +96,89 @@ function extractCandidateLinks(html: string, baseUrl: string): string[] {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+type WebsiteValidationResult = {
+  confidence: number;
+  reasons: string[];
+  suggestedAnnouncementUrls: string[];
+  needsWebsiteReview: boolean;
+};
+
+function validateWebsiteForSchool(args: {
+  schoolNameEn: string;
+  schoolNameZh: string;
+  schoolLevel: string;
+  url: string;
+  pageText: string;
+  candidateUrls: string[];
+}): WebsiteValidationResult {
+  const reasons: string[] = [];
+  const page = normalizeForMatch(args.pageText);
+  const nameEn = normalizeForMatch(args.schoolNameEn);
+  const nameZh = args.schoolNameZh.trim();
+
+  let score = 20;
+
+  const hasZh = nameZh.length > 0 && page.includes(nameZh);
+  if (hasZh) {
+    score += 40;
+    reasons.push("Matched school Chinese name on page");
+  } else {
+    reasons.push("Did not find school Chinese name on page");
+  }
+
+  const hasEn = nameEn.length > 0 && page.includes(nameEn);
+  if (hasEn) {
+    score += 20;
+    reasons.push("Matched school English name on page");
+  } else {
+    reasons.push("Did not find school English name on page");
+  }
+
+  const level = args.schoolLevel.toUpperCase();
+  const primaryMarkers = ["primary", "primary school", "p1", "p2", "p3", "p4", "p5", "p6", "小學", "小一", "小二", "小三", "小四", "小五", "小六", "附屬小學"];
+  const secondaryMarkers = ["secondary", "f1", "f2", "f3", "f4", "f5", "f6", "dse", "ibdp", "中學", "中一", "中二", "中三", "中四", "中五", "中六"];
+
+  const hasPrimaryMarkers = primaryMarkers.some((m) => page.includes(m));
+  const hasSecondaryMarkers = secondaryMarkers.some((m) => page.includes(m));
+
+  if (level.includes("PRIMARY")) {
+    if (hasPrimaryMarkers) {
+      score += 15;
+      reasons.push("Page contains primary-school markers");
+    } else {
+      reasons.push("Page missing primary-school markers");
+    }
+    if (hasSecondaryMarkers) {
+      score -= 30;
+      reasons.push("Page contains secondary-school markers (possible mismatch)");
+    }
+  }
+
+  // URL heuristic: if school is primary but URL path lacks any primary-ish indicator, slightly lower.
+  try {
+    const path = new URL(args.url).pathname.toLowerCase();
+    if (level.includes("PRIMARY") && !/(primary|ps|p\d|小學)/.test(path) && /(secondary|college|dse|ibdp|f\d)/.test(path)) {
+      score -= 10;
+      reasons.push("URL path suggests non-primary section");
+    }
+  } catch {
+    // ignore
+  }
+
+  score = Math.max(0, Math.min(100, score));
+
+  // Suggest URLs: prioritize candidate URLs that look like news/announcements/open day.
+  const suggestKeywords = ["open", "openday", "open-day", "開放", "開放日", "news", "latest", "announcement", "notice", "通告", "最新消息", "活動", "admission", "入學"];
+  const suggestedAnnouncementUrls = args.candidateUrls
+    .filter((u) => suggestKeywords.some((k) => u.toLowerCase().includes(k.toLowerCase())))
+    .slice(0, 5);
+
+  const needsWebsiteReview = score < 40;
+  if (needsWebsiteReview) reasons.push("Low confidence: likely wrong website or wrong section");
+
+  return { confidence: score, reasons, suggestedAnnouncementUrls, needsWebsiteReview };
 }
 
 async function tryDiscoverFromSitemap(rootUrl: string): Promise<string[]> {
@@ -216,7 +307,7 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
 
     for (const school of schools) {
       schoolsChecked += 1;
-      const rootUrl = school.websiteUrl;
+      const rootUrl = school.announcementsUrl ?? school.websiteUrl;
 
       // Tiny delay between schools to avoid bursts even across domains.
       await sleep(100);
@@ -279,6 +370,25 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
 
       const candidates = rootHtml ? extractCandidateLinks(rootHtml, rootUrl) : [];
       const sitemapCandidates = await tryDiscoverFromSitemap(rootUrl);
+
+      // Website validation + suggestions (systematic wrong-URL detection).
+      const validation = validateWebsiteForSchool({
+        schoolNameEn: school.nameEn,
+        schoolNameZh: school.nameZh,
+        schoolLevel: school.level,
+        url: rootUrl,
+        pageText: stripHtmlToText(rootHtml),
+        candidateUrls: [...candidates, ...sitemapCandidates],
+      });
+
+      await ctx.runMutation(api.monitoringMutations.patchSchoolWebsiteValidation, {
+        schoolId: school._id,
+        checkedAt: Date.now(),
+        websiteConfidence: validation.confidence,
+        reasons: validation.reasons,
+        suggestedAnnouncementUrls: validation.suggestedAnnouncementUrls,
+        needsWebsiteReview: validation.needsWebsiteReview,
+      });
 
       for (const u of [...candidates, ...sitemapCandidates].slice(
         0,
