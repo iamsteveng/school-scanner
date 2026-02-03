@@ -73,7 +73,6 @@ export default function VerifyTokenPage() {
         // This helps diagnose Convex client/config issues vs truly expired tokens.
         // Note: never display the returned session JWT on this page.
         // (We only log/display the error object.)
-        // eslint-disable-next-line no-console
         console.error("Verification failed", err);
 
         if (!isActive) {
