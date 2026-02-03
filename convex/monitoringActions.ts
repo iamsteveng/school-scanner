@@ -181,11 +181,11 @@ function validateWebsiteForSchool(args: {
   return { confidence: score, reasons, suggestedAnnouncementUrls, needsWebsiteReview };
 }
 
-async function tryDiscoverFromSitemap(rootUrl: string): Promise<string[]> {
+async function tryDiscoverFromSitemap(rootUrl: string, fetcher: (url: string) => Promise<Response>): Promise<string[]> {
   try {
     const u = new URL(rootUrl);
     const sitemapUrl = new URL("/sitemap.xml", u.origin).toString();
-    const resp = await fetch(sitemapUrl, { redirect: "follow" });
+    const resp = await fetcher(sitemapUrl);
     if (!resp.ok) return [];
     const xml = await resp.text();
     const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/gi)].map((m) => m[1]);
@@ -383,7 +383,7 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
       }
 
       const candidates = rootHtml ? extractCandidateLinks(rootHtml, rootUrl) : [];
-      const sitemapCandidates = await tryDiscoverFromSitemap(rootUrl);
+      const sitemapCandidates = await tryDiscoverFromSitemap(rootUrl, fetchWithPolicy);
 
       // Website validation + suggestions (systematic wrong-URL detection).
       const validation = validateWebsiteForSchool({
