@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
 import seedData from "./seed/hk_primary_schools_seed.json";
+import { sortSchoolsByRelevance } from "../shared/searchRelevance";
 
 const normalize = (value: string) => value.trim();
 
@@ -8,34 +9,42 @@ export const listSchools = query({
   args: {
     level: v.optional(v.string()),
     type: v.optional(v.string()),
-    district: v.optional(v.string()),
-    qDistrictZh: v.optional(v.string()),
+
+    // District filters
+    district: v.optional(v.string()), // districtEn (back-compat)
+    districtZh: v.optional(v.string()),
+
     q: v.optional(v.string()),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const level = args.level ? normalize(args.level) : undefined;
     const type = args.type ? normalize(args.type) : undefined;
-    const district = args.district ? normalize(args.district) : undefined;
-    void args.qDistrictZh;
-    const q = args.q ? normalize(args.q).toLowerCase() : undefined;
+
+    // Prefer districtEn filter because we have indexes for it.
+    const districtEn = args.district ? normalize(args.district) : undefined;
+    const districtZh = args.districtZh ? normalize(args.districtZh) : undefined;
+
+    const q = args.q ? normalize(args.q) : undefined;
     const limit = args.limit ?? 200;
+
     // For substring search (no full-text index yet), we need to scan more than a single page.
+    // Our dataset is small right now (~600), so 5000 is safe and keeps latency low.
     const scanLimit = q ? Math.max(limit, 5000) : limit;
 
     // Start with the most selective index we can.
     let schools;
-    if (level && type && district) {
+    if (level && type && districtEn) {
       schools = await ctx.db
         .query("schools")
         .withIndex("by_level_type_district", (q) =>
-          q.eq("level", level).eq("type", type).eq("districtEn", district),
+          q.eq("level", level).eq("type", type).eq("districtEn", districtEn),
         )
         .take(scanLimit);
-    } else if (district) {
+    } else if (districtEn) {
       schools = await ctx.db
         .query("schools")
-        .withIndex("by_district", (q) => q.eq("districtEn", district))
+        .withIndex("by_district", (q) => q.eq("districtEn", districtEn))
         .take(scanLimit);
     } else if (level) {
       schools = await ctx.db
@@ -51,17 +60,18 @@ export const listSchools = query({
       schools = await ctx.db.query("schools").take(scanLimit);
     }
 
-    if (!q) {
-      return schools;
+    // If districtZh is provided (and districtEn isn't), filter in-memory.
+    // (We can add a districtZh index later if needed.)
+    if (!districtEn && districtZh) {
+      schools = schools.filter((s) => normalize(s.districtZh) === districtZh);
     }
 
-    // For now, do a simple in-memory substring match (fine for MVP / small datasets).
-    return schools.filter((school) => {
-      return (
-        school.nameEn.toLowerCase().includes(q) ||
-        school.nameZh.toLowerCase().includes(q)
-      );
-    });
+    if (!q) {
+      return schools.slice(0, limit);
+    }
+
+    const ranked = sortSchoolsByRelevance(schools, q);
+    return ranked.slice(0, limit);
   },
 });
 

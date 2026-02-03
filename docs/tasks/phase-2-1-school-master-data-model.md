@@ -1,7 +1,7 @@
 # Task Brief: Phase 2.1 School Master Data Model (Backend)
 
 ## Status
-- In progress
+- Completed
 
 ## Progress
 - Identified an official seed source for HK primary schools via data.gov.hk / CSDI.

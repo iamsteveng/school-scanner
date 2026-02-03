@@ -1,7 +1,7 @@
 # Task Brief: Phase 2.2 Announcement Scraping / Monitoring Job (Backend)
 
 ## Status
-- In progress
+- Completed
 
 ## Goal
 - Detect new or updated school announcements (e.g. open day notices) by periodically fetching school pages.
