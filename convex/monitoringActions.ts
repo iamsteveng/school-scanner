@@ -409,10 +409,18 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
         needsWebsiteReview: validation.needsWebsiteReview,
       });
 
-      for (const u of [...candidates, ...sitemapCandidates].slice(
-        0,
-        Math.max(0, limitPagesPerSchool - 1),
-      )) {
+      const combined = [...candidates, ...sitemapCandidates];
+      const isAssetUrl = (u: string) => {
+        const lower = u.toLowerCase();
+        return (
+          lower.includes("/sites/default/files/") ||
+          /\.(png|jpe?g|gif|svg|webp|ico|css|js|map|woff2?|ttf|eot)(\?|$)/.test(lower)
+        );
+      };
+
+      for (const u of combined
+        .filter((u) => !isAssetUrl(u))
+        .slice(0, Math.max(0, limitPagesPerSchool - 1))) {
         urlsToFetch.push(u);
       }
 
@@ -425,6 +433,13 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
           const html = await resp.text();
           const text = stripHtmlToText(html);
           const contentHash = text ? simpleHash(normalizeTextForHash(text)) : undefined;
+
+          const looksLikeProxyError =
+            statusCode >= 500 ||
+            text.toLowerCase().includes("error 524") ||
+            text.toLowerCase().includes("a timeout occurred") ||
+            text.toLowerCase().includes("upstream connect error") ||
+            text.toLowerCase().includes("cloudflare");
 
           const prev = await ctx.runQuery(api.monitoringQueries.getLatestSnapshotHash, {
             schoolId: school._id,
@@ -469,23 +484,28 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
             }
           } else {
             // NEW or UPDATED
-            const title = `${school.nameEn} update`;
-            const contentText = text.slice(0, 2000);
-            const announcementHash = contentHash ?? simpleHash(contentText);
+            // Don't create announcements from obviously bad fetches (proxy timeouts, 5xx, etc.).
+            if (looksLikeProxyError) {
+              errors += 1;
+            } else {
+              const title = `${school.nameEn} update`;
+              const contentText = text.slice(0, 2000);
+              const announcementHash = contentHash ?? simpleHash(contentText);
 
-            // If we already have an announcement row for this page, treat this update as UPDATED.
-            const finalChangeType = existingAnnouncement ? "UPDATED" : changeType;
+              // If we already have an announcement row for this page, treat this update as UPDATED.
+              const finalChangeType = existingAnnouncement ? "UPDATED" : changeType;
 
-            await ctx.runMutation(api.monitoringMutations.upsertAnnouncementBySchoolAndUrl, {
-              schoolId: school._id,
-              url: u,
-              title,
-              contentText,
-              contentHash: announcementHash,
-              firstSeenAt: existingAnnouncement?.firstSeenAt ?? now,
-              lastSeenAt: now,
-              changeType: finalChangeType,
-            });
+              await ctx.runMutation(api.monitoringMutations.upsertAnnouncementBySchoolAndUrl, {
+                schoolId: school._id,
+                url: u,
+                title,
+                contentText,
+                contentHash: announcementHash,
+                firstSeenAt: existingAnnouncement?.firstSeenAt ?? now,
+                lastSeenAt: now,
+                changeType: finalChangeType,
+              });
+            }
           }
 
           pagesFetched += 1;
