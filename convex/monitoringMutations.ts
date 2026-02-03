@@ -143,3 +143,13 @@ export const patchSchoolWebsiteValidation = mutation({
     });
   },
 });
+
+export const setSchoolAnnouncementsUrl = mutation({
+  args: { schoolId: v.id("schools"), announcementsUrl: v.string() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.schoolId, {
+      announcementsUrl: args.announcementsUrl,
+      updatedAt: Date.now(),
+    });
+  },
+});

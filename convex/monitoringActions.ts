@@ -274,7 +274,9 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
 
           try {
             // This returns rendered-ish text/HTML and often works even when TLS is broken.
-            const proxyUrl = `https://r.jina.ai/${url}`;
+            // Prefer https for proxy (the proxy endpoint requires valid TLS).
+            const httpsUrl = url.replace(/^http:\/\//i, "https://");
+            const proxyUrl = `https://r.jina.ai/${httpsUrl}`;
             return await doFetch(proxyUrl);
           } catch {
             // ignore; fall through to throw original
