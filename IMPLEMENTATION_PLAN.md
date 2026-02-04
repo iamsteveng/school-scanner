@@ -297,6 +297,41 @@ Uses: WhatsApp
 * Updated announcement flagged as 🟡
 * No-change logged as 🔘
 
+---
+
+### 2.2a AI Event Extraction (Zeabur) + Normalized Events Table (Backend)
+
+**Target Outcome**
+
+* Convert scraped announcement/page content into **structured, event-oriented** records.
+* Use a configurable AI endpoint (via Zeabur) so we can compare performance across models.
+
+**Tasks**
+
+* Create a new `events` table to represent open-day / admissions events with fields such as:
+  - registrationOpenAt
+  - registrationCloseAt
+  - eventAt
+  - quota
+  - targetStudentYear(s)
+  - targetAdmissionYear
+  - plus title/sourceUrl/sourceSchoolId and rawExtract JSON
+
+* Add a Convex action that calls the **Zeabur AI API** to extract event fields from:
+  - `school_page_snapshots.text` (or the current announcement text content)
+
+* Add an upsert pipeline:
+  - for each NEW/UPDATED page/announcement, run extraction and upsert `events`
+  - persist extraction confidence + parsing notes
+
+* Document required env vars/secrets (Zeabur endpoint + API key + model selector).
+
+**Verification**
+
+* Running monitoring on a school with an open-day notice creates/updates rows in `events`.
+* Event fields populate correctly for at least 1–2 real examples.
+* Manual test command(s) exist to run extraction for one known page.
+
 ⏩ *Parallel with Phase 3 frontend work*
 
 ---
