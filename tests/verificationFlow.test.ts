@@ -18,9 +18,19 @@ type UserDoc = {
   createdAt: number;
   updatedAt: number;
   verifiedAt?: number;
+  plan?: "FREE" | "PREMIUM";
 };
 
-type QueryField = keyof TokenDoc | keyof UserDoc;
+type SelectionDoc = {
+  _id: string;
+  userId: string;
+  schoolIds: string[];
+  lockedAt?: number;
+  createdAt: number;
+  updatedAt: number;
+};
+
+type QueryField = keyof TokenDoc | keyof UserDoc | keyof SelectionDoc;
 
 class FakeQuery<T extends { [key: string]: unknown }> {
   private field: QueryField | null = null;
@@ -54,36 +64,45 @@ class FakeQuery<T extends { [key: string]: unknown }> {
 class FakeDb {
   private tokens: TokenDoc[] = [];
   private users: UserDoc[] = [];
+  private selections: SelectionDoc[] = [];
   private idCounter = 0;
 
-  query(table: "verification_tokens" | "users") {
+  query(table: "verification_tokens" | "users" | "user_school_selections") {
     if (table === "verification_tokens") {
       return new FakeQuery(this.tokens);
+    }
+    if (table === "user_school_selections") {
+      return new FakeQuery(this.selections);
     }
     return new FakeQuery(this.users);
   }
 
   async insert(
-    table: "verification_tokens" | "users",
-    doc: Omit<TokenDoc, "_id"> | Omit<UserDoc, "_id">,
+    table: "verification_tokens" | "users" | "user_school_selections",
+    doc:
+      | Omit<TokenDoc, "_id">
+      | Omit<UserDoc, "_id">
+      | Omit<SelectionDoc, "_id">,
   ) {
     const _id = `${table}_${this.idCounter++}`;
     if (table === "verification_tokens") {
       this.tokens.push({ _id, ...(doc as Omit<TokenDoc, "_id">) });
     } else if (table === "users") {
       this.users.push({ _id, ...(doc as Omit<UserDoc, "_id">) });
+    } else if (table === "user_school_selections") {
+      this.selections.push({ _id, ...(doc as Omit<SelectionDoc, "_id">) });
     }
     return _id;
   }
 
   async patch(
     id: string,
-    patch: Partial<TokenDoc> | Partial<UserDoc> | Partial<SessionDoc>,
+    patch: Partial<TokenDoc> | Partial<UserDoc> | Partial<SelectionDoc>,
   ) {
     const target =
       this.tokens.find((doc) => doc._id === id) ??
       this.users.find((doc) => doc._id === id) ??
-      this.sessions.find((doc) => doc._id === id);
+      this.selections.find((doc) => doc._id === id);
 
     if (!target) {
       throw new Error("Doc not found");
@@ -92,12 +111,15 @@ class FakeDb {
     Object.assign(target, patch);
   }
 
-  getAll(table: "verification_tokens" | "users") {
+  getAll(table: "verification_tokens" | "users" | "user_school_selections") {
     if (table === "verification_tokens") {
       return this.tokens;
     }
     if (table === "users") {
       return this.users;
+    }
+    if (table === "user_school_selections") {
+      return this.selections;
     }
     return [];
   }
@@ -128,7 +150,7 @@ describe("verification link handling", () => {
     vi.useRealTimers();
   });
 
-  it("returns dashboard for existing users", async () => {
+  it("returns /schools for existing users with no saved selection", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-25T10:00:00Z"));
 
@@ -140,6 +162,43 @@ describe("verification link handling", () => {
       createdAt: Date.now() - 1000,
       updatedAt: Date.now() - 1000,
       verifiedAt: Date.now() - 1000,
+      plan: "FREE",
+    });
+
+    const { token } = await createVerificationTokenHandler(ctx, {
+      phone: "+85251234567",
+    });
+
+    const result = await consumeVerificationLinkHandler(ctx, { token });
+    expect(result.redirectTo).toBe("/schools");
+
+    const users = db.getAll("users");
+    const updatedUser = users.find((user) => user._id === userId);
+    expect(updatedUser?.verifiedAt).toBe(Date.now());
+
+    vi.useRealTimers();
+  });
+
+  it("returns /dashboard for existing users with a saved selection", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-25T10:00:00Z"));
+
+    const ctx = makeCtx() as unknown as MutationCtx;
+    const db = ctx.db as unknown as FakeDb;
+
+    const userId = await db.insert("users", {
+      phone: "+85251234567",
+      createdAt: Date.now() - 1000,
+      updatedAt: Date.now() - 1000,
+      verifiedAt: Date.now() - 1000,
+      plan: "FREE",
+    });
+
+    await db.insert("user_school_selections", {
+      userId,
+      schoolIds: ["schools_0"],
+      createdAt: Date.now() - 1000,
+      updatedAt: Date.now() - 1000,
     });
 
     const { token } = await createVerificationTokenHandler(ctx, {
@@ -148,10 +207,6 @@ describe("verification link handling", () => {
 
     const result = await consumeVerificationLinkHandler(ctx, { token });
     expect(result.redirectTo).toBe("/dashboard");
-
-    const users = db.getAll("users");
-    const updatedUser = users.find((user) => user._id === userId);
-    expect(updatedUser?.verifiedAt).toBe(Date.now());
 
     vi.useRealTimers();
   });
