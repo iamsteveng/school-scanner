@@ -1,7 +1,7 @@
 # Task Brief: Phase 3.3 School Search & Selection UI (/schools) (Frontend)
 
 ## Status
-- In progress
+- Completed
 
 ## Goal
 - Build the onboarding UI on `/schools` where a user can:
