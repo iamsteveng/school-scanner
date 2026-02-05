@@ -154,15 +154,15 @@ Steps:
 Expected:
 - Redirected to `/dashboard`.
 
-## Open Questions (need clarification)
-1. **Auth cookie name + scope:** what is the exact JWT cookie name (`session`? `token`?) and is it `HttpOnly`? (Affects whether E2E tests can read/set it.)
-2. **Definition of “has selection”:** should redirect to `/dashboard` happen when:
-   - any `userSelections` row exists?
-   - only when `schoolIds.length > 0`?
-   - only when `lockedAt` exists?
-3. **Empty selection behavior:** if a user saves with 0 schools (should we prevent it?), what should `/schools` access do?
-4. **Plan gating:** if a PREMIUM user has a selection, do we *still* block `/schools`, or should premium users always be able to edit selections?
-5. **Redirect destination:** should “blocked from `/schools`” always go to `/dashboard`, or could it go to `/schools` with a locked/edit UI for some cases?
+## Requirements Clarified (from Steve)
+1. Session cookie name is **`jwt_token`** and it is **not HttpOnly**.
+2. API calls should also support passing the JWT via **`Authorization: Bearer <token>`**.
+3. PREMIUM users will have **another page** to edit school selection (so `/schools` access rules do not need to support editing for PREMIUM).
+4. Empty selection is **not** saved to the database.
+
+## Open Questions (remaining)
+1. **Definition of “has selection”:** confirm redirect to `/dashboard` should happen when **any** `userSelections` record exists for the user (since empty selection isn’t saved).
+2. **Redirect destination:** should “blocked from `/schools`” always go to `/dashboard` (current plan), or are there cases where we should show a locked state on `/schools` instead?
 
 - Where should we store the session JWT: localStorage, cookie, or both?
 - Should `/schools` UI be Chinese-first (labels like “開始監察”) or bilingual?
