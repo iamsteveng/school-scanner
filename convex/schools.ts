@@ -46,6 +46,21 @@ export const listSchools = query({
         .query("schools")
         .withIndex("by_district", (q) => q.eq("districtEn", districtEn))
         .take(scanLimit);
+      if (level) {
+        schools = schools.filter((s) => normalize(s.level) === level);
+      }
+      if (type) {
+        schools = schools.filter((s) => normalize(s.type) === type);
+      }
+    } else if (level && type) {
+      // We don't have a by_level+by_type compound index.
+      // Use the type index (likely more selective than level for PRIMARY-only datasets)
+      // then filter by level in-memory.
+      schools = await ctx.db
+        .query("schools")
+        .withIndex("by_type", (q) => q.eq("type", type))
+        .take(scanLimit);
+      schools = schools.filter((s) => normalize(s.level) === level);
     } else if (level) {
       schools = await ctx.db
         .query("schools")

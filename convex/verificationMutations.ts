@@ -23,7 +23,6 @@ export async function consumeVerificationLinkHandler(
     .unique();
 
   let userId = existingUser?._id;
-  const isNewUser = !existingUser;
 
   if (existingUser) {
     await ctx.db.patch(existingUser._id, {
@@ -40,10 +39,20 @@ export async function consumeVerificationLinkHandler(
     });
   }
 
+  // Redirect rule:
+  // - If the user has already saved a school selection, go to dashboard.
+  // - Otherwise, go to /schools to complete onboarding.
+  const selection = await ctx.db
+    .query("user_school_selections")
+    .withIndex("by_user", (q) => q.eq("userId", userId!))
+    .unique();
+
+  const hasSelection = !!selection && selection.schoolIds.length > 0;
+
   return {
     userId: userId!,
     phone,
-    redirectTo: isNewUser ? "/schools" : "/dashboard",
+    redirectTo: hasSelection ? "/dashboard" : "/schools",
   };
 }
 

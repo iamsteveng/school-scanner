@@ -14,6 +14,23 @@ export const getForUser = query({
   },
 });
 
+export const clearForUserDev = mutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("user_school_selections")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .unique();
+
+    if (!existing) {
+      return { ok: true, deleted: false };
+    }
+
+    await ctx.db.delete(existing._id);
+    return { ok: true, deleted: true };
+  },
+});
+
 export const saveForUser = mutation({
   args: {
     userId: v.id("users"),
