@@ -1,7 +1,7 @@
 # Task Brief: Phase 2.2a AI Event Extraction (Zeabur) + Normalized Events Table (Backend)
 
 ## Status
-- Not started
+- In progress
 
 ## Goal
 - Turn scraped announcement/page content into **structured, event-oriented** records suitable for dashboard + WhatsApp summaries.

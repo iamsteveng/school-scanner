@@ -505,6 +505,43 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
                 lastSeenAt: now,
                 changeType: finalChangeType,
               });
+
+              // Phase 2.2a: AI extraction pipeline (best-effort; must not break monitoring).
+              try {
+                const extract = await ctx.runAction(api.aiActions.extractEventsFromText, {
+                  schoolId: school._id,
+                  sourceUrl: u,
+                  contentText: text.slice(0, 12000),
+                  contentHash: announcementHash,
+                });
+
+                const rawJson = (() => {
+                  try {
+                    return JSON.stringify(extract.raw ?? null);
+                  } catch {
+                    return undefined;
+                  }
+                })();
+
+                const extractEvents = (extract.events ?? []).map((ev: Record<string, unknown>) => ({
+                  ...ev,
+                  rawExtractJson: rawJson,
+                }));
+
+                if (extractEvents.length > 0) {
+                  await ctx.runMutation(api.eventMutations.upsertEventsFromExtract, {
+                    schoolId: school._id,
+                    sourceUrl: u,
+                    sourceContentHash: announcementHash,
+                    events: extractEvents,
+                    overallConfidence:
+                      typeof extract.confidence === "number" ? extract.confidence : undefined,
+                    raw: rawJson,
+                  });
+                }
+              } catch {
+                // ignore
+              }
             }
           }
 

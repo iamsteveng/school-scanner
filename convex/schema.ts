@@ -135,4 +135,32 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_user", ["userId"]),
+
+  events: defineTable({
+    schoolId: v.id("schools"),
+    sourceUrl: v.string(),
+    sourceContentHash: v.string(),
+
+    eventHash: v.string(),
+    title: v.string(),
+
+    eventAt: v.optional(v.number()),
+    registrationOpenAt: v.optional(v.number()),
+    registrationCloseAt: v.optional(v.number()),
+    quota: v.optional(v.number()),
+    targetStudentYears: v.optional(v.array(v.string())),
+    targetAdmissionYear: v.optional(v.string()),
+
+    language: v.optional(v.union(v.literal("zh"), v.literal("en"), v.literal("mixed"))),
+    confidence: v.optional(v.number()),
+
+    rawExtractJson: v.optional(v.string()),
+    extractionNotes: v.optional(v.string()),
+
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_school", ["schoolId"])
+    .index("by_school_url", ["schoolId", "sourceUrl"])
+    .index("by_event_hash", ["eventHash"]),
 });
