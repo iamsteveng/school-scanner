@@ -72,6 +72,9 @@ export default function VerifyTokenPage() {
         // Used by /schools and other pages to identify the user.
         // Note: in production, prefer HttpOnly cookies set server-side.
         const maxAgeSeconds = 30 * 24 * 60 * 60;
+        // Primary cookie name (per requirements)
+        document.cookie = `jwt_token=${encodeURIComponent(result.token)}; Path=/; Max-Age=${maxAgeSeconds}; SameSite=Lax`;
+        // Back-compat for older code paths
         document.cookie = `ss_session=${encodeURIComponent(result.token)}; Path=/; Max-Age=${maxAgeSeconds}; SameSite=Lax`;
 
         router.replace(result.redirectTo ?? "/start");

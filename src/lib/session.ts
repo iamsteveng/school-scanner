@@ -17,6 +17,11 @@ export function getCookie(name: string): string | null {
 }
 
 export function getSessionToken(): string | null {
+  // Primary cookie name (per requirements)
+  const jwt = getCookie("jwt_token");
+  if (jwt) return jwt;
+
+  // Back-compat (older previews)
   return getCookie("ss_session");
 }
 
