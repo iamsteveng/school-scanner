@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { getSessionUserId } from "../../lib/session";
 import { DISTRICT_OPTIONS, TYPE_OPTIONS } from "./constants";
+import { useRouter } from "next/navigation";
 
 type FilterState = {
   q: string;
@@ -19,6 +20,7 @@ function labelBilingual(zh: string, en: string) {
 }
 
 export default function SchoolsClient() {
+  const router = useRouter();
   const userId = getSessionUserId() as Id<"users"> | null;
 
   const [filters, setFilters] = useState<FilterState>({
@@ -32,6 +34,19 @@ export default function SchoolsClient() {
     api.userSelections.getForUser,
     userId ? { userId } : "skip",
   );
+
+  // Access control / redirects
+  useEffect(() => {
+    if (!userId) {
+      router.replace("/start");
+      return;
+    }
+
+    // If the user already has a saved selection, they should not access /schools again.
+    if (selection?.schoolIds && selection.schoolIds.length > 0) {
+      router.replace("/dashboard");
+    }
+  }, [router, userId, selection?.schoolIds]);
 
   const saveSelection = useMutation(api.userSelections.saveForUser);
 
