@@ -73,17 +73,35 @@ function fallbackExtractFromText(text: string): {
   };
 }
 
+function normalizeAiHubBaseUrl(input: string): string {
+  const trimmed = input.trim();
+  if (!trimmed) return trimmed;
+  // Steve may pass https://sfo1.aihub.zeabur.ai/ (no /v1)
+  // Zeabur AI Hub OpenAI-compatible endpoint lives under /v1
+  try {
+    const u = new URL(trimmed);
+    if (u.pathname === "/" || u.pathname === "") {
+      u.pathname = "/v1";
+    }
+    return u.toString().replace(/\/$/, "");
+  } catch {
+    return trimmed.replace(/\/$/, "");
+  }
+}
+
 export const extractEventsFromText: ReturnType<typeof action> = action({
   args: {
     schoolId: v.id("schools"),
     sourceUrl: v.string(),
     contentText: v.string(),
     contentHash: v.string(),
+    model: v.optional(v.string()),
   },
   handler: async (_ctx, args) => {
-    const baseUrl = process.env.ZEABUR_AI_BASE_URL;
+    const baseUrlRaw = process.env.ZEABUR_AI_BASE_URL;
     const apiKey = process.env.ZEABUR_AI_API_KEY;
-    const model = process.env.ZEABUR_AI_MODEL;
+    const model = args.model ?? process.env.ZEABUR_AI_MODEL;
+    const baseUrl = baseUrlRaw ? normalizeAiHubBaseUrl(baseUrlRaw) : undefined;
 
     const inputText = args.contentText.slice(0, 12_000);
 
@@ -99,7 +117,10 @@ export const extractEventsFromText: ReturnType<typeof action> = action({
     // Zeabur AI Hub is OpenAI-compatible.
     // Docs: https://zeabur.com/docs/en-US/ai-hub
     // Example endpoint: https://hnd1.aihub.zeabur.ai/v1/chat/completions
-    const url = new URL("chat/completions", baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`).toString();
+    const url = new URL(
+      "chat/completions",
+      baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`,
+    ).toString();
 
     const system =
       "You extract Hong Kong primary school open-day/admissions events from raw webpage text. " +
