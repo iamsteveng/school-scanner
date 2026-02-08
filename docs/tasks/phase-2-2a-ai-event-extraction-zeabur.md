@@ -78,6 +78,10 @@ Convex env vars:
 - Manual test:
   - Run monitoring on a known school with an open-day announcement and confirm rows in `events`.
 
+## Model Selection (Decision)
+- Winner model from SPCCPS benchmark (2026-02-08): **`gemini-2.5-flash-lite`**
+- We will set `ZEABUR_AI_MODEL=gemini-2.5-flash-lite` for the default extraction pipeline.
+
 ## Open Questions
 1) Upsert key: should we key by `sourceUrl + title + eventAt`, or by a deterministic `eventHash`?
 2) Should we store multiple events per source page, or 1 page → 1 event?
