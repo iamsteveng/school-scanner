@@ -40,15 +40,27 @@ New table: `events`
 
 (We can extend later for location, contact, fee, etc.)
 
-## Zeabur AI API Assumptions
-We’ll treat Zeabur as a proxy that supports:
-- choosing a model (e.g. via `model` param)
-- returning a JSON response
+## Zeabur AI Hub (Standard API)
+Zeabur provides **Zeabur AI Hub**, which is **OpenAI API compatible**.
+Docs: https://zeabur.com/docs/en-US/ai-hub
 
-Convex env vars (names TBD):
-- `ZEABUR_AI_BASE_URL`
+### API Shape
+- Use the standard OpenAI chat completions endpoint:
+  - `POST {ZEABUR_AI_BASE_URL}/chat/completions`
+  - Example full endpoint shown in docs: `https://hnd1.aihub.zeabur.ai/v1/chat/completions`
+- Auth:
+  - `Authorization: Bearer {ZEABUR_AI_API_KEY}`
+- Model selection:
+  - `model: "..."` in request body (OpenAI-compatible)
+
+### Date/Time Output (Decision)
+- We instruct the LLM to output **ISO 8601 strings** with explicit HK offset (`+08:00`) for any date/time fields.
+- Convex parses ISO strings into ms timestamps before storing into `events`.
+
+Convex env vars:
+- `ZEABUR_AI_BASE_URL` (e.g. `https://hnd1.aihub.zeabur.ai/v1`)
 - `ZEABUR_AI_API_KEY`
-- `ZEABUR_AI_MODEL`
+- `ZEABUR_AI_MODEL` (e.g. `gpt-4o-mini`, `claude-3-5-sonnet`, etc.)
 
 ## Backend (Convex) Functions
 - `aiActions.extractEventsFromText` (action)

@@ -15,6 +15,11 @@ export type EventExtract = {
   extractionNotes?: string;
 };
 
+type ZeaburAiHubChatResponse = {
+  id?: string;
+  choices?: Array<{ message?: { content?: string } }>;
+};
+
 function stableHash(input: string): string {
   let h = 2166136261;
   for (let i = 0; i < input.length; i++) {
@@ -30,6 +35,16 @@ function guessLanguage(text: string): "zh" | "en" | "mixed" {
   if (hasZh && hasEn) return "mixed";
   if (hasZh) return "zh";
   return "en";
+}
+
+function parseIsoToMs(value: unknown): number | undefined {
+  if (typeof value === "number") return value;
+  if (typeof value !== "string") return undefined;
+  const s = value.trim();
+  if (!s) return undefined;
+  const ms = Date.parse(s);
+  if (Number.isNaN(ms)) return undefined;
+  return ms;
 }
 
 // Minimal fallback extractor so the pipeline still functions even if Zeabur isn't configured.
@@ -72,7 +87,7 @@ export const extractEventsFromText: ReturnType<typeof action> = action({
 
     const inputText = args.contentText.slice(0, 12_000);
 
-    if (!baseUrl || !apiKey) {
+    if (!baseUrl || !apiKey || !model) {
       const fallback = fallbackExtractFromText(inputText);
       return {
         ...fallback,
@@ -81,56 +96,74 @@ export const extractEventsFromText: ReturnType<typeof action> = action({
       };
     }
 
-    const prompt = {
-      task: "extract_school_events",
-      schoolId: args.schoolId,
-      sourceUrl: args.sourceUrl,
-      contentHash: args.contentHash,
-      instructions:
-        "Extract open-day/admissions-related events from the provided text. Return JSON only. If unknown, omit the field.",
-      schema: {
-        events: [
-          {
-            title: "string",
-            eventAt: "number? (ms timestamp)",
-            registrationOpenAt: "number? (ms timestamp)",
-            registrationCloseAt: "number? (ms timestamp)",
-            quota: "number?",
-            targetStudentYears: "string[]?",
-            targetAdmissionYear: "string?",
-            language: '"zh"|"en"|"mixed"?'
-          },
-        ],
-        confidence: "number (0..1)",
-        notes: "string?",
-      },
-      text: inputText,
+    // Zeabur AI Hub is OpenAI-compatible.
+    // Docs: https://zeabur.com/docs/en-US/ai-hub
+    // Example endpoint: https://hnd1.aihub.zeabur.ai/v1/chat/completions
+    const url = new URL("chat/completions", baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`).toString();
+
+    const system =
+      "You extract Hong Kong primary school open-day/admissions events from raw webpage text. " +
+      "Return ONLY valid JSON. Use ISO 8601 strings with timezone offset (+08:00) for all date/time fields.";
+
+    const user =
+      `SOURCE_URL: ${args.sourceUrl}\n` +
+      `CONTENT_HASH: ${args.contentHash}\n` +
+      "\nTEXT:\n" +
+      inputText;
+
+    const schemaHint = {
+      confidence: 0.0,
+      events: [
+        {
+          title: "",
+          eventAt: "2026-02-01T10:00:00+08:00",
+          registrationOpenAt: "2026-01-01T00:00:00+08:00",
+          registrationCloseAt: "2026-01-15T23:59:59+08:00",
+          quota: 0,
+          targetStudentYears: ["P6"],
+          targetAdmissionYear: "2026-2027",
+          language: "zh",
+        },
+      ],
+      notes: "",
     };
 
-    const url = new URL("/extract", baseUrl).toString();
+    const body = {
+      model,
+      temperature: 0.2,
+      messages: [
+        { role: "system", content: system },
+        {
+          role: "user",
+          content:
+            user +
+            "\n\nReturn JSON with keys: confidence (0..1), events (array), notes (optional). " +
+            "Each event: title (required), eventAt/registrationOpenAt/registrationCloseAt as ISO8601 strings (+08:00), " +
+            "quota as integer if present, targetStudentYears as array like K1/K2/K3/P1..P6, targetAdmissionYear like 2026-2027, " +
+            "language as zh/en/mixed. Omit unknown fields. " +
+            `Example shape: ${JSON.stringify(schemaHint)}`,
+        },
+      ],
+      response_format: { type: "json_object" },
+    };
 
     const resp = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
-        ...(model ? { "X-Model": model } : {}),
       },
-      body: JSON.stringify(prompt),
+      body: JSON.stringify(body),
     });
 
     const rawText = await resp.text();
     if (!resp.ok) {
-      // Surface enough details for debugging (stored as raw on event rows)
       const fallback = fallbackExtractFromText(inputText);
       return {
         ...fallback,
         provider: "zeabur_error",
         requestId: stableHash(rawText).slice(0, 12),
-        raw: {
-          status: resp.status,
-          body: rawText.slice(0, 4000),
-        },
+        raw: { status: resp.status, body: rawText.slice(0, 4000) },
       };
     }
 
@@ -147,9 +180,42 @@ export const extractEventsFromText: ReturnType<typeof action> = action({
       };
     }
 
-    const parsedObj = (parsed && typeof parsed === "object") ? (parsed as Record<string, unknown>) : null;
-    const eventsRaw = Array.isArray(parsedObj?.events) ? (parsedObj?.events as unknown[]) : [];
-    const confidence = typeof parsedObj?.confidence === "number" ? (parsedObj.confidence as number) : undefined;
+    const chat = parsed as ZeaburAiHubChatResponse;
+    const content = chat?.choices?.[0]?.message?.content;
+    if (!content || typeof content !== "string") {
+      const fallback = fallbackExtractFromText(inputText);
+      return {
+        ...fallback,
+        provider: "zeabur_missing_content",
+        requestId: stableHash(rawText).slice(0, 12),
+        raw: parsed,
+      };
+    }
+
+    let contentJson: unknown;
+    try {
+      contentJson = JSON.parse(content);
+    } catch {
+      const fallback = fallbackExtractFromText(inputText);
+      return {
+        ...fallback,
+        provider: "zeabur_content_not_json",
+        requestId: stableHash(content).slice(0, 12),
+        raw: { response: parsed, content: content.slice(0, 4000) },
+      };
+    }
+
+    const parsedObj =
+      contentJson && typeof contentJson === "object"
+        ? (contentJson as Record<string, unknown>)
+        : null;
+    const eventsRaw = Array.isArray(parsedObj?.events)
+      ? (parsedObj?.events as unknown[])
+      : [];
+    const confidence =
+      typeof parsedObj?.confidence === "number"
+        ? (parsedObj.confidence as number)
+        : undefined;
 
     const normalized: EventExtract[] = eventsRaw
       .filter((e): e is Record<string, unknown> => !!e && typeof e === "object")
@@ -159,12 +225,15 @@ export const extractEventsFromText: ReturnType<typeof action> = action({
         const language = e.language;
         return {
           title: title.trim().slice(0, 200),
-          eventAt: typeof e.eventAt === "number" ? e.eventAt : undefined,
-          registrationOpenAt:
-            typeof e.registrationOpenAt === "number" ? e.registrationOpenAt : undefined,
-          registrationCloseAt:
-            typeof e.registrationCloseAt === "number" ? e.registrationCloseAt : undefined,
-          quota: typeof e.quota === "number" ? e.quota : undefined,
+          eventAt: parseIsoToMs(e.eventAt),
+          registrationOpenAt: parseIsoToMs(e.registrationOpenAt),
+          registrationCloseAt: parseIsoToMs(e.registrationCloseAt),
+          quota:
+            typeof e.quota === "number"
+              ? Math.trunc(e.quota)
+              : typeof e.quota === "string"
+                ? Number.parseInt(e.quota, 10)
+                : undefined,
           targetStudentYears: Array.isArray(e.targetStudentYears)
             ? e.targetStudentYears.map(String).slice(0, 6)
             : undefined,
@@ -180,11 +249,11 @@ export const extractEventsFromText: ReturnType<typeof action> = action({
       .filter((e) => e.title.length > 0);
 
     return {
-      provider: "zeabur",
+      provider: "zeabur_ai_hub",
       requestId: stableHash(args.contentHash + args.sourceUrl),
       events: normalized,
       confidence: confidence ?? null,
-      raw: parsed,
+      raw: { response: parsed, content: contentJson },
     };
   },
 });
