@@ -5,6 +5,13 @@ import { sortSchoolsByRelevance } from "../shared/searchRelevance";
 
 const normalize = (value: string) => value.trim();
 
+export const getSchoolById = query({
+  args: { schoolId: v.id("schools") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.schoolId);
+  },
+});
+
 export const listSchools = query({
   args: {
     level: v.optional(v.string()),
