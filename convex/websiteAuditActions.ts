@@ -42,7 +42,9 @@ function extractCandidateLinks(content: string, baseUrl: string): string[] {
   ];
 
   // Markdown links (e.g. from r.jina.ai proxy)
-  const mdLinks = [...content.matchAll(/\]\((https?:\/\/[^)\s]+)\)/g)].map((m) => m[1]);
+  const mdLinks = [...content.matchAll(/\]\((https?:\/\/[^)\s]+)\)/g)].map(
+    (m) => m[1],
+  );
 
   const keywords = [
     "primary",
@@ -76,16 +78,15 @@ function extractCandidateLinks(content: string, baseUrl: string): string[] {
       continue;
     }
 
-    // Allow off-domain, but only if it matches our keywords (e.g. spccps.edu.hk from spcc.edu.hk)
     const lower = abs.toLowerCase();
     if (keywords.some((k) => lower.includes(k.toLowerCase()))) {
       out.add(abs);
     }
 
-    // Always keep any obvious "primary school" domain variants discovered.
-    if (/(spccps|primary)/i.test(abs)) out.add(abs);
+    // Keep obvious primary-school domain variants discovered.
+    if (/(ps\.|spccps|primary)/i.test(abs)) out.add(abs);
 
-    // Prefer keeping same-origin links too (for announcements pages).
+    // Keep same-origin links too.
     if (baseOrigin) {
       try {
         if (new URL(abs).origin === baseOrigin) out.add(abs);
@@ -98,7 +99,12 @@ function extractCandidateLinks(content: string, baseUrl: string): string[] {
   return [...out].slice(0, 30);
 }
 
-async function fetchWithFallback(url: string): Promise<{ finalUrl: string; text: string; raw: string; status: number }> {
+async function fetchWithFallback(url: string): Promise<{
+  finalUrl: string;
+  text: string;
+  raw: string;
+  status: number;
+}> {
   const doFetch = async (u: string) => {
     const resp = await fetch(u, { redirect: "follow" });
     const raw = await resp.text();
@@ -110,11 +116,9 @@ async function fetchWithFallback(url: string): Promise<{ finalUrl: string; text:
     const text = stripHtmlToText(r.raw);
     return { ...r, text };
   } catch {
-    // proxy fallback (handles TLS issues / blocks)
     const httpsUrl = url.replace(/^http:\/\//i, "https://");
     const proxyUrl = `https://r.jina.ai/${httpsUrl}`;
     const r = await doFetch(proxyUrl);
-    // r.jina.ai returns markdown; stripHtmlToText is fine (it will mostly pass through).
     const text = stripHtmlToText(r.raw);
     return { ...r, text };
   }
@@ -128,186 +132,250 @@ type AiAuditResult = {
   recommendedAnnouncementsUrl?: string | null;
 };
 
-export const auditSchoolUrls: ReturnType<typeof action> = action({
+type AuditOutput = {
+  schoolId: string;
+  nameZh: string;
+  nameEn: string;
+  level: string;
+  currentWebsiteUrl: string;
+  currentAnnouncementsUrl: string | null;
+  isMismatch: boolean;
+  confidence: number;
+  reason?: string;
+  recommendedWebsiteUrl?: string | null;
+  recommendedAnnouncementsUrl?: string | null;
+  usage?: unknown;
+  requestId?: string;
+};
+
+async function auditOne(
+  ctx: { runQuery: (fn: unknown, args: unknown) => Promise<unknown> },
+  args: { schoolId: string; model?: string; baseUrl?: string },
+): Promise<AuditOutput> {
+  const { api } = await import("./_generated/api");
+
+  const school = await ctx.runQuery(api.schools.getSchoolById, {
+    schoolId: args.schoolId,
+  });
+  if (!school) throw new Error("School not found");
+
+  const websiteUrl = school.websiteUrl;
+  const baseUrlRaw = args.baseUrl ?? process.env.ZEABUR_AI_BASE_URL;
+  const apiKey = process.env.ZEABUR_AI_API_KEY;
+  const model =
+    args.model ?? process.env.ZEABUR_AI_MODEL ?? "gemini-2.5-flash-lite";
+
+  const fetched = await fetchWithFallback(websiteUrl);
+  const candidateUrls = extractCandidateLinks(fetched.raw, websiteUrl);
+
+  if (!baseUrlRaw || !apiKey) {
+    return {
+      schoolId: school._id,
+      nameZh: school.nameZh,
+      nameEn: school.nameEn,
+      level: school.level,
+      currentWebsiteUrl: websiteUrl,
+      currentAnnouncementsUrl: school.announcementsUrl ?? null,
+      isMismatch: false,
+      confidence: 0,
+      reason: "Missing ZEABUR_AI_BASE_URL or ZEABUR_AI_API_KEY",
+      recommendedWebsiteUrl: null,
+      recommendedAnnouncementsUrl: null,
+    };
+  }
+
+  const baseUrl = normalizeAiHubBaseUrl(baseUrlRaw);
+  const url = new URL(
+    "chat/completions",
+    baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`,
+  ).toString();
+
+  const system =
+    "You are auditing school website URLs for Hong Kong schools. " +
+    "Given the school identity (name, level) and the text of the current websiteUrl, decide if it is the correct site for that school. " +
+    "If it is wrong, pick the correct website URL and announcements URL from the provided candidateUrls only. " +
+    "Return ONLY valid JSON.";
+
+  const user = {
+    school: {
+      nameZh: school.nameZh,
+      nameEn: school.nameEn,
+      level: school.level,
+      districtEn: school.districtEn,
+      districtZh: school.districtZh,
+    },
+    current: {
+      websiteUrl,
+      announcementsUrl: school.announcementsUrl ?? null,
+      fetchedFinalUrl: fetched.finalUrl,
+      fetchedStatus: fetched.status,
+    },
+    pageTextSample: fetched.text.slice(0, 3000),
+    candidateUrls,
+    constraints: {
+      recommendationMustComeFromCandidateUrls: true,
+    },
+    output: {
+      isMismatch: "boolean",
+      confidence: "number 0..1",
+      reason: "string",
+      recommendedWebsiteUrl: "string|null",
+      recommendedAnnouncementsUrl: "string|null",
+    },
+  };
+
+  const body = {
+    model,
+    temperature: 0.1,
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: JSON.stringify(user) },
+    ],
+    response_format: { type: "json_object" },
+  };
+
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const rawText = await resp.text();
+  if (!resp.ok) {
+    return {
+      schoolId: school._id,
+      nameZh: school.nameZh,
+      nameEn: school.nameEn,
+      level: school.level,
+      currentWebsiteUrl: websiteUrl,
+      currentAnnouncementsUrl: school.announcementsUrl ?? null,
+      isMismatch: false,
+      confidence: 0,
+      reason: `AI hub error ${resp.status}`,
+      recommendedWebsiteUrl: null,
+      recommendedAnnouncementsUrl: null,
+      requestId: stableHash(rawText).slice(0, 12),
+    };
+  }
+
+  const parsed = JSON.parse(rawText) as Record<string, unknown>;
+
+  const choices = Array.isArray(parsed.choices)
+    ? (parsed.choices as unknown[])
+    : [];
+  const firstChoice =
+    choices[0] && typeof choices[0] === "object"
+      ? (choices[0] as Record<string, unknown>)
+      : null;
+  const message =
+    firstChoice && typeof firstChoice.message === "object"
+      ? (firstChoice.message as Record<string, unknown>)
+      : null;
+  const content = typeof message?.content === "string" ? message.content : "";
+
+  let contentJson: unknown;
+  try {
+    contentJson = JSON.parse(content);
+  } catch {
+    contentJson = null;
+  }
+
+  const audit =
+    contentJson && typeof contentJson === "object"
+      ? (contentJson as AiAuditResult)
+      : null;
+
+  return {
+    schoolId: school._id,
+    nameZh: school.nameZh,
+    nameEn: school.nameEn,
+    level: school.level,
+    currentWebsiteUrl: websiteUrl,
+    currentAnnouncementsUrl: school.announcementsUrl ?? null,
+    isMismatch: !!audit?.isMismatch,
+    confidence: typeof audit?.confidence === "number" ? audit.confidence : 0,
+    reason: audit?.reason,
+    recommendedWebsiteUrl: audit?.recommendedWebsiteUrl ?? null,
+    recommendedAnnouncementsUrl: audit?.recommendedAnnouncementsUrl ?? null,
+    usage: parsed.usage,
+    requestId: (parsed.id as string | undefined) ?? stableHash(rawText).slice(0, 12),
+  };
+}
+
+export const auditSchoolUrls = action({
   args: {
     schoolId: v.id("schools"),
     model: v.optional(v.string()),
     baseUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const out = await auditOne(ctx, {
+      schoolId: args.schoolId,
+      model: args.model,
+      baseUrl: args.baseUrl,
+    });
+    return { ok: true, ...out };
+  },
+});
+
+export const auditBatch = action({
+  args: {
+    limit: v.optional(v.number()),
+    model: v.optional(v.string()),
+    baseUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
     const { api } = await import("./_generated/api");
 
-    const school = await ctx.runQuery(api.schools.getSchoolById, {
-      schoolId: args.schoolId,
-    });
-    if (!school) throw new Error("School not found");
+    const limit = Math.max(1, Math.min(200, args.limit ?? 50));
 
-    const websiteUrl = school.websiteUrl;
-    const baseUrlRaw = args.baseUrl ?? process.env.ZEABUR_AI_BASE_URL;
-    const apiKey = process.env.ZEABUR_AI_API_KEY;
-    const model = args.model ?? process.env.ZEABUR_AI_MODEL ?? "gemini-2.5-flash-lite";
-
-    const fetched = await fetchWithFallback(websiteUrl);
-    const candidateUrls = extractCandidateLinks(fetched.raw, websiteUrl);
-
-    if (!baseUrlRaw || !apiKey) {
-      return {
-        ok: true,
-        provider: "disabled",
-        model,
-        school: {
-          id: school._id,
-          nameZh: school.nameZh,
-          nameEn: school.nameEn,
-          level: school.level,
-          websiteUrl,
-          announcementsUrl: school.announcementsUrl ?? null,
-        },
-        fetch: {
-          status: fetched.status,
-          finalUrl: fetched.finalUrl,
-          textSample: fetched.text.slice(0, 600),
-        },
-        candidates: candidateUrls,
-        audit: null,
-        note: "Missing ZEABUR_AI_BASE_URL or ZEABUR_AI_API_KEY; report-only mode returns candidates only.",
-      };
-    }
-
-    const baseUrl = normalizeAiHubBaseUrl(baseUrlRaw);
-    const url = new URL("chat/completions", baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`).toString();
-
-    const system =
-      "You are auditing school website URLs for Hong Kong schools. " +
-      "Given the school identity (name, level) and the text of the current websiteUrl, decide if it is the correct site for that school. " +
-      "If it is wrong, pick the correct website URL and announcements URL from the provided candidateUrls only. " +
-      "Return ONLY valid JSON.";
-
-    const user = {
-      school: {
-        nameZh: school.nameZh,
-        nameEn: school.nameEn,
-        level: school.level,
-        districtEn: school.districtEn,
-        districtZh: school.districtZh,
-      },
-      current: {
-        websiteUrl,
-        announcementsUrl: school.announcementsUrl ?? null,
-        fetchedFinalUrl: fetched.finalUrl,
-        fetchedStatus: fetched.status,
-      },
-      pageTextSample: fetched.text.slice(0, 3000),
-      candidateUrls,
-      constraints: {
-        recommendationMustComeFromCandidateUrls: true,
-      },
-      output: {
-        isMismatch: "boolean",
-        confidence: "number 0..1",
-        reason: "string",
-        recommendedWebsiteUrl: "string|null",
-        recommendedAnnouncementsUrl: "string|null",
-      },
-    };
-
-    const body = {
-      model,
-      temperature: 0.1,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: JSON.stringify(user) },
-      ],
-      response_format: { type: "json_object" },
-    };
-
-    const resp = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(body),
+    // Pull a slice of schools (MVP). If needed we can add deterministic ordering later.
+    const schools = await ctx.runQuery(api.schools.listSchools, {
+      limit,
     });
 
-    const rawText = await resp.text();
-    if (!resp.ok) {
-      return {
-        ok: true,
-        provider: "zeabur_ai_hub_error",
-        model,
-        school: {
-          id: school._id,
-          nameZh: school.nameZh,
-          nameEn: school.nameEn,
-          level: school.level,
-          websiteUrl,
-          announcementsUrl: school.announcementsUrl ?? null,
-        },
-        fetch: {
-          status: fetched.status,
-          finalUrl: fetched.finalUrl,
-          textSample: fetched.text.slice(0, 600),
-        },
-        candidates: candidateUrls,
-        audit: null,
-        error: { status: resp.status, body: rawText.slice(0, 2000) },
-      };
+    const results: AuditOutput[] = [];
+    let mismatches = 0;
+    let errors = 0;
+
+    for (const s of schools) {
+      try {
+        const r = await auditOne(ctx, {
+          schoolId: s._id,
+          model: args.model,
+          baseUrl: args.baseUrl,
+        });
+        if (r.isMismatch) mismatches += 1;
+        results.push(r);
+      } catch (e) {
+        errors += 1;
+        results.push({
+          schoolId: s._id,
+          nameZh: s.nameZh,
+          nameEn: s.nameEn,
+          level: s.level,
+          currentWebsiteUrl: s.websiteUrl,
+          currentAnnouncementsUrl: s.announcementsUrl ?? null,
+          isMismatch: false,
+          confidence: 0,
+          reason: e instanceof Error ? e.message : String(e),
+          recommendedWebsiteUrl: null,
+          recommendedAnnouncementsUrl: null,
+        });
+      }
     }
 
-    const parsed = JSON.parse(rawText) as { choices?: Array<{ message?: { content?: string } }> };
-    const content = parsed?.choices?.[0]?.message?.content ?? "";
-
-    let contentJson: unknown;
-    try {
-      contentJson = JSON.parse(content);
-    } catch {
-      contentJson = null;
-    }
-
-    const audit = (contentJson && typeof contentJson === "object")
-      ? (contentJson as AiAuditResult)
-      : null;
-
-    // Report-only: DO NOT patch the DB.
     return {
       ok: true,
-      provider: "zeabur_ai_hub",
-      model,
-      requestId: stableHash(rawText).slice(0, 12),
-      school: {
-        id: school._id,
-        nameZh: school.nameZh,
-        nameEn: school.nameEn,
-        level: school.level,
-        websiteUrl,
-        announcementsUrl: school.announcementsUrl ?? null,
-      },
-      fetch: {
-        status: fetched.status,
-        finalUrl: fetched.finalUrl,
-        textSample: fetched.text.slice(0, 600),
-      },
-      candidates: candidateUrls,
-      audit,
-      raw: {
-        responseMeta: {
-          // preserve id+usage when present
-          id:
-            parsed && typeof parsed === "object"
-              ? (parsed as Record<string, unknown>).id
-              : undefined,
-          model:
-            parsed && typeof parsed === "object"
-              ? (parsed as Record<string, unknown>).model
-              : undefined,
-          usage:
-            parsed && typeof parsed === "object"
-              ? (parsed as Record<string, unknown>).usage
-              : undefined,
-        },
-        content: contentJson,
-      },
+      limit,
+      model: args.model ?? process.env.ZEABUR_AI_MODEL ?? "gemini-2.5-flash-lite",
+      baseUrl: args.baseUrl ?? process.env.ZEABUR_AI_BASE_URL ?? null,
+      mismatches,
+      errors,
+      results,
     };
   },
 });
