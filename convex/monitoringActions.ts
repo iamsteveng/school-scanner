@@ -533,6 +533,8 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
                     schoolId: school._id,
                     sourceUrl: u,
                     sourceContentHash: announcementHash,
+                    provider: typeof extract.provider === "string" ? extract.provider : undefined,
+                    model: typeof extract.model === "string" ? extract.model : undefined,
                     events: extractEvents,
                     overallConfidence:
                       typeof extract.confidence === "number" ? extract.confidence : undefined,

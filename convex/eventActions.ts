@@ -5,6 +5,8 @@ import { action } from "./_generated/server";
 export const extractFromAnnouncement: ReturnType<typeof action> = action({
   args: {
     announcementId: v.id("announcements"),
+    model: v.optional(v.string()),
+    baseUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { api } = await import("./_generated/api");
@@ -22,6 +24,8 @@ export const extractFromAnnouncement: ReturnType<typeof action> = action({
       sourceUrl: row.url,
       contentText: row.contentText,
       contentHash: row.contentHash,
+      model: args.model,
+      baseUrl: args.baseUrl,
     });
 
     const rawJson = (() => {
@@ -42,6 +46,8 @@ export const extractFromAnnouncement: ReturnType<typeof action> = action({
         schoolId: row.schoolId,
         sourceUrl: row.url,
         sourceContentHash: row.contentHash,
+        provider: typeof extract.provider === "string" ? extract.provider : undefined,
+        model: typeof extract.model === "string" ? extract.model : args.model,
         events: extractEvents,
         overallConfidence: typeof extract.confidence === "number" ? extract.confidence : undefined,
         raw: rawJson,

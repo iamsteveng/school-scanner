@@ -141,6 +141,10 @@ export default defineSchema({
     sourceUrl: v.string(),
     sourceContentHash: v.string(),
 
+    // AI provenance (for model comparison)
+    provider: v.optional(v.string()),
+    model: v.optional(v.string()),
+
     eventHash: v.string(),
     title: v.string(),
 

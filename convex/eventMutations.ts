@@ -15,6 +15,8 @@ export const upsertEventsFromExtract = mutation({
     schoolId: v.id("schools"),
     sourceUrl: v.string(),
     sourceContentHash: v.string(),
+    provider: v.optional(v.string()),
+    model: v.optional(v.string()),
     events: v.array(
       v.object({
         title: v.string(),
@@ -44,6 +46,8 @@ export const upsertEventsFromExtract = mutation({
           args.schoolId,
           args.sourceUrl,
           args.sourceContentHash,
+          args.provider ?? "",
+          args.model ?? "",
           e.title.trim().toLowerCase(),
           e.eventAt != null ? String(e.eventAt) : "",
         ].join("|"),
@@ -58,6 +62,8 @@ export const upsertEventsFromExtract = mutation({
         schoolId: args.schoolId,
         sourceUrl: args.sourceUrl,
         sourceContentHash: args.sourceContentHash,
+        provider: args.provider,
+        model: args.model,
         eventHash,
         title: e.title.trim().slice(0, 200),
         eventAt: e.eventAt,

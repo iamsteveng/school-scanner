@@ -96,9 +96,10 @@ export const extractEventsFromText: ReturnType<typeof action> = action({
     contentText: v.string(),
     contentHash: v.string(),
     model: v.optional(v.string()),
+    baseUrl: v.optional(v.string()),
   },
   handler: async (_ctx, args) => {
-    const baseUrlRaw = process.env.ZEABUR_AI_BASE_URL;
+    const baseUrlRaw = args.baseUrl ?? process.env.ZEABUR_AI_BASE_URL;
     const apiKey = process.env.ZEABUR_AI_API_KEY;
     const model = args.model ?? process.env.ZEABUR_AI_MODEL;
     const baseUrl = baseUrlRaw ? normalizeAiHubBaseUrl(baseUrlRaw) : undefined;
@@ -271,6 +272,7 @@ export const extractEventsFromText: ReturnType<typeof action> = action({
 
     return {
       provider: "zeabur_ai_hub",
+      model,
       requestId: stableHash(args.contentHash + args.sourceUrl),
       events: normalized,
       confidence: confidence ?? null,
