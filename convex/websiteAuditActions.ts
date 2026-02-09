@@ -323,32 +323,55 @@ export const auditSchoolUrls = action({
 
 export const auditBatch = action({
   args: {
+    cursor: v.optional(v.string()),
     limit: v.optional(v.number()),
     model: v.optional(v.string()),
     baseUrl: v.optional(v.string()),
+    autoFix: v.optional(v.boolean()),
+    autoFixMinConfidence: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const { api } = await import("./_generated/api");
 
-    const limit = Math.max(1, Math.min(200, args.limit ?? 50));
+    const limit = Math.max(1, Math.min(200, args.limit ?? 200));
+    const autoFix = args.autoFix ?? true;
+    const autoFixMinConfidence = args.autoFixMinConfidence ?? 0.9;
 
-    // Pull a slice of schools (MVP). If needed we can add deterministic ordering later.
-    const schools = await ctx.runQuery(api.schools.listSchools, {
+    const page = await ctx.runQuery(api.schools.listSchoolsPaged, {
+      cursor: args.cursor,
       limit,
     });
 
     const results: AuditOutput[] = [];
     let mismatches = 0;
     let errors = 0;
+    let fixed = 0;
 
-    for (const s of schools) {
+    for (const s of page.page) {
       try {
         const r = await auditOne(ctx, {
           schoolId: s._id,
           model: args.model,
           baseUrl: args.baseUrl,
         });
+
         if (r.isMismatch) mismatches += 1;
+
+        if (
+          autoFix &&
+          r.isMismatch &&
+          r.confidence >= autoFixMinConfidence &&
+          (r.recommendedWebsiteUrl || r.recommendedAnnouncementsUrl)
+        ) {
+          await ctx.runMutation(api.schools.patchSchoolUrls, {
+            schoolId: s._id,
+            websiteUrl: r.recommendedWebsiteUrl ?? undefined,
+            announcementsUrl: r.recommendedAnnouncementsUrl ?? undefined,
+            auditNote: `AI audit auto-fix (conf=${r.confidence})`,
+          });
+          fixed += 1;
+        }
+
         results.push(r);
       } catch (e) {
         errors += 1;
@@ -371,9 +394,15 @@ export const auditBatch = action({
     return {
       ok: true,
       limit,
+      cursorIn: args.cursor ?? null,
+      cursorOut: page.cursor,
+      isDone: page.isDone,
       model: args.model ?? process.env.ZEABUR_AI_MODEL ?? "gemini-2.5-flash-lite",
       baseUrl: args.baseUrl ?? process.env.ZEABUR_AI_BASE_URL ?? null,
+      autoFix,
+      autoFixMinConfidence,
       mismatches,
+      fixed,
       errors,
       results,
     };

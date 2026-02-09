@@ -12,6 +12,46 @@ export const getSchoolById = query({
   },
 });
 
+export const listSchoolsPaged = query({
+  args: {
+    cursor: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 200;
+    const page = await ctx.db
+      .query("schools")
+      .order("asc")
+      .paginate({ cursor: args.cursor ?? null, numItems: limit });
+
+    return {
+      page: page.page,
+      cursor: page.continueCursor,
+      isDone: page.isDone,
+    };
+  },
+});
+
+export const patchSchoolUrls = mutation({
+  args: {
+    schoolId: v.id("schools"),
+    websiteUrl: v.optional(v.string()),
+    announcementsUrl: v.optional(v.string()),
+    auditNote: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const patch: Record<string, unknown> = { updatedAt: now };
+    if (args.websiteUrl !== undefined) patch.websiteUrl = args.websiteUrl;
+    if (args.announcementsUrl !== undefined)
+      patch.announcementsUrl = args.announcementsUrl;
+    if (args.auditNote !== undefined) patch.websiteValidationReasons = [args.auditNote];
+
+    await ctx.db.patch(args.schoolId, patch);
+    return { ok: true };
+  },
+});
+
 export const listSchools = query({
   args: {
     level: v.optional(v.string()),

@@ -28,6 +28,7 @@ import type * as verificationActions from "../verificationActions.js";
 import type * as verificationFlow from "../verificationFlow.js";
 import type * as verificationMutations from "../verificationMutations.js";
 import type * as verificationTokens from "../verificationTokens.js";
+import type * as websiteAuditActions from "../websiteAuditActions.js";
 import type * as whatsapp from "../whatsapp.js";
 import type * as whatsappLogs from "../whatsappLogs.js";
 
@@ -58,6 +59,7 @@ declare const fullApi: ApiFromModules<{
   verificationFlow: typeof verificationFlow;
   verificationMutations: typeof verificationMutations;
   verificationTokens: typeof verificationTokens;
+  websiteAuditActions: typeof websiteAuditActions;
   whatsapp: typeof whatsapp;
   whatsappLogs: typeof whatsappLogs;
 }>;
