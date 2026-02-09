@@ -84,6 +84,61 @@ npx convex data schools --limit 5
 
 ---
 
+## School URL Data Maintenance (Seed + Auditor)
+
+We have **two cooperating jobs**:
+
+1) **Seed school data refresh** (irregular / on-demand)
+2) **AI URL auditor** (regular) that detects wrong `websiteUrl` / `announcementsUrl` and **auto-fixes** them.
+
+### Policy decisions
+- **Auto-fix is enabled** for high-confidence mismatches.
+- **Approach A:** seed refresh **must not clobber** audited URLs.
+  - If seed provides a different `websiteUrl` than the currently-audited one, we keep the audited URL and mark the row **pending audit**.
+
+### Data flow
+
+#### 1) Seed refresh (irregular)
+When applying a new seed snapshot:
+- Upsert schools (district/type/metadata) from seed.
+- If a school already has an audited URL (or previous auto-fix), **preserve**:
+  - `schools.websiteUrl`
+  - `schools.announcementsUrl`
+- If seed introduces a new school or changes a URL field:
+  - mark `auditStatus = "pending"` (or equivalent) so the auditor will re-check.
+
+#### 2) URL auditor (regular)
+The auditor runs in small batches (e.g. 50/run) and:
+- fetches the current `websiteUrl`
+- extracts candidate links
+- asks the winner model (`gemini-2.5-flash-lite`) to decide mismatch + recommend URLs
+- **auto-fixes** when confidence passes threshold
+
+Recommended auto-fix rule (initial):
+- If `audit.isMismatch === true` and `audit.confidence >= 0.9`, patch:
+  - `schools.websiteUrl = audit.recommendedWebsiteUrl` (when present)
+  - `schools.announcementsUrl = audit.recommendedAnnouncementsUrl` (when present)
+
+### Run auditor (manual)
+Report-only single school:
+```bash
+npx convex run websiteAuditActions:auditSchoolUrls '{"schoolId":"<schoolId>","model":"gemini-2.5-flash-lite","baseUrl":"https://sfo1.aihub.zeabur.ai/"}' --typecheck=disable
+```
+
+Batch audit 50:
+```bash
+npx convex run websiteAuditActions:auditBatch '{"limit":50,"model":"gemini-2.5-flash-lite","baseUrl":"https://sfo1.aihub.zeabur.ai/"}' --typecheck=disable
+```
+
+### Notes
+- Zeabur AI Hub is OpenAI-compatible; base URL should point to the regional endpoint (we normalize `/v1`).
+- Keep costs low by:
+  - auditing only `pending`/stale/low-confidence rows
+  - running in batches
+  - using the winner model
+
+---
+
 ## Monitoring (Phase 2.2)
 
 ### Run monitoring once (manual)
