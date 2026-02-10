@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { action } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 
 function stableHash(input: string): string {
   let h = 2166136261;
@@ -148,9 +149,17 @@ type AuditOutput = {
   requestId?: string;
 };
 
+type ConvexActionCtxLike = {
+  // Keep this loose to avoid Next.js build-time type coupling with Convex FunctionReference types.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  runQuery: (query: any, args: any) => Promise<any>;
+};
+
+type SchoolId = Id<"schools">;
+
 async function auditOne(
-  ctx: { runQuery: (fn: unknown, args: unknown) => Promise<unknown> },
-  args: { schoolId: string; model?: string; baseUrl?: string },
+  ctx: ConvexActionCtxLike,
+  args: { schoolId: SchoolId; model?: string; baseUrl?: string },
 ): Promise<AuditOutput> {
   const { api } = await import("./_generated/api");
 
@@ -158,8 +167,13 @@ async function auditOne(
     schoolId: args.schoolId,
   });
   if (!school) throw new Error("School not found");
+  if (typeof school !== "object" || school === null) {
+    throw new Error("Invalid school row");
+  }
 
-  const websiteUrl = school.websiteUrl;
+  const s = school as Record<string, unknown>;
+  const websiteUrl = typeof s.websiteUrl === "string" ? s.websiteUrl : null;
+  if (!websiteUrl) throw new Error("School row missing websiteUrl");
   const baseUrlRaw = args.baseUrl ?? process.env.ZEABUR_AI_BASE_URL;
   const apiKey = process.env.ZEABUR_AI_API_KEY;
   const model =
@@ -170,12 +184,13 @@ async function auditOne(
 
   if (!baseUrlRaw || !apiKey) {
     return {
-      schoolId: school._id,
-      nameZh: school.nameZh,
-      nameEn: school.nameEn,
-      level: school.level,
+      schoolId: args.schoolId,
+      nameZh: typeof s.nameZh === "string" ? s.nameZh : "",
+      nameEn: typeof s.nameEn === "string" ? s.nameEn : "",
+      level: typeof s.level === "string" ? s.level : "",
       currentWebsiteUrl: websiteUrl,
-      currentAnnouncementsUrl: school.announcementsUrl ?? null,
+      currentAnnouncementsUrl:
+        typeof s.announcementsUrl === "string" ? s.announcementsUrl : null,
       isMismatch: false,
       confidence: 0,
       reason: "Missing ZEABUR_AI_BASE_URL or ZEABUR_AI_API_KEY",
@@ -198,15 +213,16 @@ async function auditOne(
 
   const user = {
     school: {
-      nameZh: school.nameZh,
-      nameEn: school.nameEn,
-      level: school.level,
-      districtEn: school.districtEn,
-      districtZh: school.districtZh,
+      nameZh: typeof s.nameZh === "string" ? s.nameZh : "",
+      nameEn: typeof s.nameEn === "string" ? s.nameEn : "",
+      level: typeof s.level === "string" ? s.level : "",
+      districtEn: typeof s.districtEn === "string" ? s.districtEn : "",
+      districtZh: typeof s.districtZh === "string" ? s.districtZh : "",
     },
     current: {
       websiteUrl,
-      announcementsUrl: school.announcementsUrl ?? null,
+      announcementsUrl:
+        typeof s.announcementsUrl === "string" ? s.announcementsUrl : null,
       fetchedFinalUrl: fetched.finalUrl,
       fetchedStatus: fetched.status,
     },
@@ -246,12 +262,13 @@ async function auditOne(
   const rawText = await resp.text();
   if (!resp.ok) {
     return {
-      schoolId: school._id,
-      nameZh: school.nameZh,
-      nameEn: school.nameEn,
-      level: school.level,
+      schoolId: args.schoolId,
+      nameZh: typeof s.nameZh === "string" ? s.nameZh : "",
+      nameEn: typeof s.nameEn === "string" ? s.nameEn : "",
+      level: typeof s.level === "string" ? s.level : "",
       currentWebsiteUrl: websiteUrl,
-      currentAnnouncementsUrl: school.announcementsUrl ?? null,
+      currentAnnouncementsUrl:
+        typeof s.announcementsUrl === "string" ? s.announcementsUrl : null,
       isMismatch: false,
       confidence: 0,
       reason: `AI hub error ${resp.status}`,
@@ -289,12 +306,13 @@ async function auditOne(
       : null;
 
   return {
-    schoolId: school._id,
-    nameZh: school.nameZh,
-    nameEn: school.nameEn,
-    level: school.level,
+    schoolId: args.schoolId,
+    nameZh: typeof s.nameZh === "string" ? s.nameZh : "",
+    nameEn: typeof s.nameEn === "string" ? s.nameEn : "",
+    level: typeof s.level === "string" ? s.level : "",
     currentWebsiteUrl: websiteUrl,
-    currentAnnouncementsUrl: school.announcementsUrl ?? null,
+    currentAnnouncementsUrl:
+      typeof s.announcementsUrl === "string" ? s.announcementsUrl : null,
     isMismatch: !!audit?.isMismatch,
     confidence: typeof audit?.confidence === "number" ? audit.confidence : 0,
     reason: audit?.reason,
@@ -305,7 +323,8 @@ async function auditOne(
   };
 }
 
-export const auditSchoolUrls = action({
+// NOTE: Explicit type annotation avoids Next.js/TS circular inference issues.
+export const auditSchoolUrls: ReturnType<typeof action> = action({
   args: {
     schoolId: v.id("schools"),
     model: v.optional(v.string()),
@@ -321,7 +340,8 @@ export const auditSchoolUrls = action({
   },
 });
 
-export const auditBatch = action({
+// NOTE: Explicit type annotation avoids Next.js/TS circular inference issues.
+export const auditBatch: ReturnType<typeof action> = action({
   args: {
     cursor: v.optional(v.string()),
     limit: v.optional(v.number()),
@@ -409,7 +429,8 @@ export const auditBatch = action({
   },
 });
 
-export const runContinuousUrlAuditBatch = action({
+// NOTE: Explicit type annotation avoids Next.js/TS circular inference issues.
+export const runContinuousUrlAuditBatch: ReturnType<typeof action> = action({
   args: {
     limit: v.optional(v.number()),
     staleDays: v.optional(v.number()),
@@ -443,17 +464,28 @@ export const runContinuousUrlAuditBatch = action({
     let fixed = 0;
     let errors = 0;
 
-    for (const s of candidates) {
+    for (const row of candidates) {
       const checkedAt = Date.now();
+      const s = row as Record<string, unknown>;
+      const schoolId = s._id as SchoolId | undefined;
+      if (!schoolId) {
+        errors += 1;
+        continue;
+      }
+
       try {
-        const r = await auditOne(ctx, { schoolId: s._id, model, baseUrl: baseUrl ?? undefined });
+        const r = await auditOne(ctx, {
+          schoolId,
+          model,
+          baseUrl: baseUrl ?? undefined,
+        });
         checked += 1;
 
         if (r.isMismatch) mismatches += 1;
 
         // Always mark checked. Clear pending by default.
         await ctx.runMutation(api.schools.recordUrlAuditCheck, {
-          schoolId: s._id,
+          schoolId,
           checkedAt,
           status: r.isMismatch ? "needs_review" : "ok",
         });
@@ -465,17 +497,18 @@ export const runContinuousUrlAuditBatch = action({
         ) {
           // Patch + log fix.
           await ctx.runMutation(api.schools.patchSchoolUrls, {
-            schoolId: s._id,
+            schoolId,
             websiteUrl: r.recommendedWebsiteUrl ?? undefined,
             announcementsUrl: r.recommendedAnnouncementsUrl ?? undefined,
             auditNote: `AI audit auto-fix (conf=${r.confidence})`,
           });
 
           await ctx.runMutation(internal.urlAuditFixes.logAutoFix, {
-            schoolId: s._id,
-            oldWebsiteUrl: s.websiteUrl,
+            schoolId,
+            oldWebsiteUrl: typeof s.websiteUrl === "string" ? s.websiteUrl : undefined,
             newWebsiteUrl: r.recommendedWebsiteUrl ?? undefined,
-            oldAnnouncementsUrl: s.announcementsUrl ?? undefined,
+            oldAnnouncementsUrl:
+              typeof s.announcementsUrl === "string" ? s.announcementsUrl : undefined,
             newAnnouncementsUrl: r.recommendedAnnouncementsUrl ?? undefined,
             confidence: r.confidence,
             reason: r.reason,
@@ -488,7 +521,7 @@ export const runContinuousUrlAuditBatch = action({
       } catch {
         errors += 1;
         await ctx.runMutation(api.schools.recordUrlAuditCheck, {
-          schoolId: s._id,
+          schoolId,
           checkedAt,
           status: "pending",
         });
