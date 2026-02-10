@@ -1,7 +1,7 @@
 # Task Brief: Phase 4.1 Dashboard Data Aggregation API (Backend)
 
 ## Status
-- In progress
+- Completed
 
 ## Goal
 Provide a single backend API that returns everything the `/dashboard` UI needs in one call.
