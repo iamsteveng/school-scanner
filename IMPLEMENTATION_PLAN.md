@@ -36,8 +36,9 @@ This section mirrors `docs/tasks/*.md` so we can see progress at a glance.
 - Phase 3.1 School Search API — **Completed**
 - Phase 3.2 School Selection Rules Engine — **Completed**
 - Phase 3.3 School Selection UI (/schools) — **Completed**
+- Phase 4.1 Dashboard Data Aggregation API — **Completed**
 
-(Phases 4–8 do not yet have task briefs under `docs/tasks/`.)
+(Phases 4.2+ and 5–8 do not yet have task briefs under `docs/tasks/`.)
 
 ---
 
