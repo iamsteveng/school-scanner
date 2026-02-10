@@ -16,6 +16,31 @@ See `docs/TASK_WORKFLOW.md` for the “start next task” process and the brief 
 
 ---
 
+## Task Brief Status Index
+
+This section mirrors `docs/tasks/*.md` so we can see progress at a glance.
+
+- Phase 0.1 Infrastructure & Environment Setup — **Completed**
+- Phase 0.2 Frontend App Shell Setup — **Completed**
+- Phase 1.1 WhatsApp Verification Token System — **Completed**
+- Phase 1.1a Backend Unit Test CI — **Completed**
+- Phase 1.2 WhatsApp Message Dispatch — **Completed**
+- Phase 1.3 Registration UI (/start) — **Completed**
+- Phase 1.3a Frontend Unit Test CI — **Completed**
+- Phase 1.4 Verification Link Handling (/v/:token) — **Completed**
+- Phase 1.5 Verification Redirect Handling — **Completed**
+- Phase 2.1 School Master Data Model — **Completed**
+- Phase 2.1a School Master Data Enrichment + Monthly Refresh — **Completed**
+- Phase 2.2 Announcement Scraping / Monitoring Job — **Completed**
+- Phase 2.2a AI Event Extraction (Zeabur) + Events Table — **Completed**
+- Phase 3.1 School Search API — **Completed**
+- Phase 3.2 School Selection Rules Engine — **Completed**
+- Phase 3.3 School Selection UI (/schools) — **Completed**
+
+(Phases 4–8 do not yet have task briefs under `docs/tasks/`.)
+
+---
+
 ## Phase 0 — Foundations (Must Be Done First)
 
 ### 0.1 Infrastructure & Environment Setup (Backend)
