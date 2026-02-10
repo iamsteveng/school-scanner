@@ -120,9 +120,17 @@ Each run:
 - logs each auto-fix to `url_audit_fixes`
 - updates cumulative counters in `url_audit_state`
 
-### How auto-fixes are reported
-- **Per-fix log**: `url_audit_fixes` rows with old/new URLs, confidence, reason, model, timestamp.
-- **Summary**: `url_audit_state` contains counters (checked/mismatch/fixed/errors) + last run time.
+### How mismatches (incl. low-confidence) are reported
+- **Per-school status (primary):** auditor sets `schools.auditStatus`:
+  - `ok` (no mismatch)
+  - `needs_review` (mismatch detected but not auto-fixed)
+  - `pending` (queued for re-audit)
+
+  To review low-confidence / non-auto-fixed mismatches, filter schools by:
+  - `auditStatus == "needs_review"`
+
+- **Auto-fix log:** only high-confidence auto-fixes are logged to `url_audit_fixes` (old/new URLs, confidence, reason, model, timestamp).
+- **Summary:** `url_audit_state` contains counters (checked/mismatch/fixed/errors) + last run time.
 
 ### Control plane
 Start/stop the auditor:
