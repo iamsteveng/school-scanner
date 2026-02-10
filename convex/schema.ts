@@ -81,13 +81,19 @@ export default defineSchema({
     websiteSuggestedAnnouncementUrls: v.optional(v.array(v.string())),
     needsWebsiteReview: v.optional(v.boolean()),
 
+    // URL auditor (continuous)
+    auditStatus: v.optional(v.string()), // "pending" | "ok" | "needs_review"
+    auditLastCheckedAt: v.optional(v.number()),
+
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_level", ["level"])
     .index("by_type", ["type"])
     .index("by_district", ["districtEn"])
-    .index("by_level_type_district", ["level", "type", "districtEn"]),
+    .index("by_level_type_district", ["level", "type", "districtEn"])
+    .index("by_audit_status", ["auditStatus"])
+    .index("by_audit_last_checked", ["auditLastCheckedAt"]),
 
   monitoring_runs: defineTable({
     startedAt: v.number(),
@@ -135,4 +141,69 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_user", ["userId"]),
+
+  url_audit_state: defineTable({
+    running: v.boolean(),
+    // If set, schools with auditLastCheckedAt < this will be re-audited.
+    forceAuditAllBefore: v.optional(v.number()),
+
+    checkedTotal: v.number(),
+    mismatchesTotal: v.number(),
+    fixedTotal: v.number(),
+    errorsTotal: v.number(),
+
+    lastRunAt: v.optional(v.number()),
+    lastError: v.optional(v.string()),
+
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }),
+
+  url_audit_fixes: defineTable({
+    schoolId: v.id("schools"),
+
+    oldWebsiteUrl: v.optional(v.string()),
+    newWebsiteUrl: v.optional(v.string()),
+    oldAnnouncementsUrl: v.optional(v.string()),
+    newAnnouncementsUrl: v.optional(v.string()),
+
+    confidence: v.number(),
+    reason: v.optional(v.string()),
+    model: v.string(),
+    baseUrl: v.string(),
+
+    createdAt: v.number(),
+  }).index("by_school", ["schoolId"]),
+
+  events: defineTable({
+    schoolId: v.id("schools"),
+    sourceUrl: v.string(),
+    sourceContentHash: v.string(),
+
+    // AI provenance (for model comparison)
+    provider: v.optional(v.string()),
+    model: v.optional(v.string()),
+
+    eventHash: v.string(),
+    title: v.string(),
+
+    eventAt: v.optional(v.number()),
+    registrationOpenAt: v.optional(v.number()),
+    registrationCloseAt: v.optional(v.number()),
+    quota: v.optional(v.number()),
+    targetStudentYears: v.optional(v.array(v.string())),
+    targetAdmissionYear: v.optional(v.string()),
+
+    language: v.optional(v.union(v.literal("zh"), v.literal("en"), v.literal("mixed"))),
+    confidence: v.optional(v.number()),
+
+    rawExtractJson: v.optional(v.string()),
+    extractionNotes: v.optional(v.string()),
+
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_school", ["schoolId"])
+    .index("by_school_url", ["schoolId", "sourceUrl"])
+    .index("by_event_hash", ["eventHash"]),
 });

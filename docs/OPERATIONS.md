@@ -84,6 +84,91 @@ npx convex data schools --limit 5
 
 ---
 
+## School URL Data Maintenance (Seed + Auditor)
+
+We have **two cooperating jobs**:
+
+1) **Seed school data refresh** (irregular / on-demand)
+2) **Continuous AI URL auditor** (scheduled) that detects wrong `websiteUrl` / `announcementsUrl` and **auto-fixes** them.
+
+### Policy decisions
+- **Auto-fix is enabled** for high-confidence mismatches.
+- **No random sampling**: we only audit schools that are `pending`, missing audit history, or stale.
+- **Staleness window:** re-audit when `auditLastCheckedAt` is older than **30 days**.
+
+### Data flow
+
+#### 1) Seed refresh (irregular)
+When applying a new seed snapshot:
+- Upsert schools (district/type/metadata) from seed.
+- If seed introduces a new school or changes a URL field:
+  - set `schools.auditStatus = "pending"` so the auditor will re-check soon.
+
+#### 2) Continuous URL auditor (scheduled)
+Cron: `continuous-url-audit-cron` (every ~15 minutes)
+
+Each run:
+- selects up to N schools needing audit (priority order):
+  1) `auditStatus == "pending"`
+  2) `auditLastCheckedAt` is missing
+  3) `auditLastCheckedAt < now - 30 days`
+- runs AI audit (winner model: `gemini-2.5-flash-lite`)
+- writes `schools.auditLastCheckedAt = now` and sets `auditStatus`:
+  - `ok` if no mismatch
+  - `needs_review` if mismatch
+- **auto-fix** when `isMismatch=true` and `confidence >= 0.9`
+- logs each auto-fix to `url_audit_fixes`
+- updates cumulative counters in `url_audit_state`
+
+### How mismatches (incl. low-confidence) are reported
+- **Per-school status (primary):** auditor sets `schools.auditStatus`:
+  - `ok` (no mismatch)
+  - `needs_review` (mismatch detected but not auto-fixed)
+  - `pending` (queued for re-audit)
+
+  To review low-confidence / non-auto-fixed mismatches, filter schools by:
+  - `auditStatus == "needs_review"`
+
+- **Auto-fix log:** only high-confidence auto-fixes are logged to `url_audit_fixes` (old/new URLs, confidence, reason, model, timestamp).
+- **Summary:** `url_audit_state` contains counters (checked/mismatch/fixed/errors) + last run time.
+
+### Control plane
+Start/stop the auditor:
+```bash
+npx convex run urlAuditState:setRunning '{"running":true}' --typecheck=disable
+npx convex run urlAuditState:setRunning '{"running":false}' --typecheck=disable
+```
+
+Force a “fresh” re-audit of everything (Option C):
+```bash
+npx convex run urlAuditState:forceReauditAllNow '{}' --typecheck=disable
+```
+
+Check progress/state:
+```bash
+npx convex run urlAuditState:getState '{}' --typecheck=disable
+```
+
+List recent auto-fixes:
+```bash
+npx convex run urlAuditFixes:listRecentFixes '{"limit":50}' --typecheck=disable
+```
+
+### Manual audit (ad-hoc)
+Single school audit (report-only):
+```bash
+npx convex run websiteAuditActions:auditSchoolUrls '{"schoolId":"<schoolId>","model":"gemini-2.5-flash-lite","baseUrl":"https://sfo1.aihub.zeabur.ai/"}' --typecheck=disable
+```
+
+### Notes
+- Zeabur AI Hub is OpenAI-compatible; base URL should point to the regional endpoint (we normalize `/v1`).
+- Keep costs low by:
+  - only auditing `pending` + missing + stale (>30d)
+  - small batch size (default 10)
+  - winner model
+
+---
+
 ## Monitoring (Phase 2.2)
 
 ### Run monitoring once (manual)

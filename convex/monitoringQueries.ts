@@ -1,5 +1,6 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 
 export const getSchoolsForMonitoring = query({
   args: { limit: v.number(), q: v.optional(v.string()) },
@@ -14,7 +15,11 @@ export const getSchoolsForMonitoring = query({
     if (!q) return schools.slice(0, limit);
 
     return schools
-      .filter((s) => s.nameEn.toLowerCase().includes(q) || s.nameZh.toLowerCase().includes(q))
+      .filter(
+        (s) =>
+          s.nameEn.toLowerCase().includes(q) ||
+          s.nameZh.toLowerCase().includes(q),
+      )
       .slice(0, limit);
   },
 });
@@ -24,7 +29,9 @@ export const getLatestSnapshotHash = query({
   handler: async (ctx, args) => {
     const prev = await ctx.db
       .query("school_page_snapshots")
-      .withIndex("by_school_url", (q) => q.eq("schoolId", args.schoolId).eq("url", args.url))
+      .withIndex("by_school_url", (q) =>
+        q.eq("schoolId", args.schoolId).eq("url", args.url),
+      )
       .order("desc")
       .first();
 
@@ -37,7 +44,9 @@ export const getAnnouncementBySchoolAndUrl = query({
   handler: async (ctx, args) => {
     return ctx.db
       .query("announcements")
-      .withIndex("by_school_url", (q) => q.eq("schoolId", args.schoolId).eq("url", args.url))
+      .withIndex("by_school_url", (q) =>
+        q.eq("schoolId", args.schoolId).eq("url", args.url),
+      )
       .first();
   },
 });
@@ -51,5 +60,21 @@ export const listSchoolsNeedingWebsiteReview = query({
       .filter((s) => s.needsWebsiteReview)
       .sort((a, b) => (b.websiteLastCheckedAt ?? 0) - (a.websiteLastCheckedAt ?? 0))
       .slice(0, limit);
+  },
+});
+
+export const getAnnouncementById = query({
+  args: { announcementId: v.id("announcements") },
+  handler: async (ctx, args) => {
+    const row = await ctx.db.get(args.announcementId);
+    if (!row) return null;
+    return {
+      _id: row._id as Id<"announcements">,
+      schoolId: row.schoolId,
+      url: row.url,
+      title: row.title,
+      contentText: row.contentText,
+      contentHash: row.contentHash,
+    };
   },
 });

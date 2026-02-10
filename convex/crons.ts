@@ -27,4 +27,12 @@ crons.interval(
   {},
 );
 
+// Continuous URL auditor: runs small batches frequently.
+crons.interval(
+  "continuous-url-audit-cron",
+  { minutes: 15 },
+  internal.jobs.continuousUrlAuditCron,
+  { limit: 10 },
+);
+
 export default crons;

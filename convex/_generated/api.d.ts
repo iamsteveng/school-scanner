@@ -8,7 +8,10 @@
  * @module
  */
 
+import type * as aiActions from "../aiActions.js";
 import type * as crons from "../crons.js";
+import type * as eventActions from "../eventActions.js";
+import type * as eventMutations from "../eventMutations.js";
 import type * as health from "../health.js";
 import type * as http from "../http.js";
 import type * as jobs from "../jobs.js";
@@ -18,6 +21,8 @@ import type * as monitoringActions from "../monitoringActions.js";
 import type * as monitoringMutations from "../monitoringMutations.js";
 import type * as monitoringQueries from "../monitoringQueries.js";
 import type * as schools from "../schools.js";
+import type * as urlAuditFixes from "../urlAuditFixes.js";
+import type * as urlAuditState from "../urlAuditState.js";
 import type * as userSelections from "../userSelections.js";
 import type * as users from "../users.js";
 import type * as usersQueries from "../usersQueries.js";
@@ -25,6 +30,7 @@ import type * as verificationActions from "../verificationActions.js";
 import type * as verificationFlow from "../verificationFlow.js";
 import type * as verificationMutations from "../verificationMutations.js";
 import type * as verificationTokens from "../verificationTokens.js";
+import type * as websiteAuditActions from "../websiteAuditActions.js";
 import type * as whatsapp from "../whatsapp.js";
 import type * as whatsappLogs from "../whatsappLogs.js";
 
@@ -35,7 +41,10 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  aiActions: typeof aiActions;
   crons: typeof crons;
+  eventActions: typeof eventActions;
+  eventMutations: typeof eventMutations;
   health: typeof health;
   http: typeof http;
   jobs: typeof jobs;
@@ -45,6 +54,8 @@ declare const fullApi: ApiFromModules<{
   monitoringMutations: typeof monitoringMutations;
   monitoringQueries: typeof monitoringQueries;
   schools: typeof schools;
+  urlAuditFixes: typeof urlAuditFixes;
+  urlAuditState: typeof urlAuditState;
   userSelections: typeof userSelections;
   users: typeof users;
   usersQueries: typeof usersQueries;
@@ -52,6 +63,7 @@ declare const fullApi: ApiFromModules<{
   verificationFlow: typeof verificationFlow;
   verificationMutations: typeof verificationMutations;
   verificationTokens: typeof verificationTokens;
+  websiteAuditActions: typeof websiteAuditActions;
   whatsapp: typeof whatsapp;
   whatsappLogs: typeof whatsappLogs;
 }>;
