@@ -408,3 +408,101 @@ export const auditBatch = action({
     };
   },
 });
+
+export const runContinuousUrlAuditBatch = action({
+  args: {
+    limit: v.optional(v.number()),
+    staleDays: v.optional(v.number()),
+    model: v.optional(v.string()),
+    baseUrl: v.optional(v.string()),
+    autoFixMinConfidence: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const { api, internal } = await import("./_generated/api");
+
+    const state = await ctx.runQuery(api.urlAuditState.getState, {});
+    if (!state?.running) {
+      return { ok: true, skipped: true, reason: "url audit not running" };
+    }
+
+    const limit = Math.max(1, Math.min(50, args.limit ?? 10));
+    const staleDays = args.staleDays ?? 30;
+    const autoFixMinConfidence = args.autoFixMinConfidence ?? 0.9;
+
+    const model = args.model ?? process.env.ZEABUR_AI_MODEL ?? "gemini-2.5-flash-lite";
+    const baseUrl = args.baseUrl ?? process.env.ZEABUR_AI_BASE_URL ?? null;
+
+    const candidates = await ctx.runQuery(api.schools.listSchoolsForUrlAudit, {
+      limit,
+      staleDays,
+      forceAuditAllBefore: state.forceAuditAllBefore,
+    });
+
+    let checked = 0;
+    let mismatches = 0;
+    let fixed = 0;
+    let errors = 0;
+
+    for (const s of candidates) {
+      const checkedAt = Date.now();
+      try {
+        const r = await auditOne(ctx, { schoolId: s._id, model, baseUrl: baseUrl ?? undefined });
+        checked += 1;
+
+        if (r.isMismatch) mismatches += 1;
+
+        // Always mark checked. Clear pending by default.
+        await ctx.runMutation(api.schools.recordUrlAuditCheck, {
+          schoolId: s._id,
+          checkedAt,
+          status: r.isMismatch ? "needs_review" : "ok",
+        });
+
+        if (
+          r.isMismatch &&
+          r.confidence >= autoFixMinConfidence &&
+          (r.recommendedWebsiteUrl || r.recommendedAnnouncementsUrl)
+        ) {
+          // Patch + log fix.
+          await ctx.runMutation(api.schools.patchSchoolUrls, {
+            schoolId: s._id,
+            websiteUrl: r.recommendedWebsiteUrl ?? undefined,
+            announcementsUrl: r.recommendedAnnouncementsUrl ?? undefined,
+            auditNote: `AI audit auto-fix (conf=${r.confidence})`,
+          });
+
+          await ctx.runMutation(internal.urlAuditFixes.logAutoFix, {
+            schoolId: s._id,
+            oldWebsiteUrl: s.websiteUrl,
+            newWebsiteUrl: r.recommendedWebsiteUrl ?? undefined,
+            oldAnnouncementsUrl: s.announcementsUrl ?? undefined,
+            newAnnouncementsUrl: r.recommendedAnnouncementsUrl ?? undefined,
+            confidence: r.confidence,
+            reason: r.reason,
+            model,
+            baseUrl: baseUrl ?? "",
+          });
+
+          fixed += 1;
+        }
+      } catch {
+        errors += 1;
+        await ctx.runMutation(api.schools.recordUrlAuditCheck, {
+          schoolId: s._id,
+          checkedAt,
+          status: "pending",
+        });
+      }
+    }
+
+    await ctx.runMutation(internal.urlAuditState.recordBatchStats, {
+      checked,
+      mismatches,
+      fixed,
+      errors,
+      lastError: errors ? "batch contained errors" : undefined,
+    });
+
+    return { ok: true, checked, mismatches, fixed, errors, limit, staleDays };
+  },
+});

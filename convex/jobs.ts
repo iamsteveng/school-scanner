@@ -35,3 +35,14 @@ export const monthlySchoolSeedRefreshCron: ReturnType<typeof internalAction> =
       });
     },
   });
+
+export const continuousUrlAuditCron: ReturnType<typeof internalAction> = internalAction({
+  args: { limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    await ctx.runMutation(internal.urlAuditState.ensureState, {});
+    return await ctx.runAction(api.websiteAuditActions.runContinuousUrlAuditBatch, {
+      limit: args.limit,
+      staleDays: 30,
+    });
+  },
+});

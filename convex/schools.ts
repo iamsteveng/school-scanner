@@ -32,6 +32,65 @@ export const listSchoolsPaged = query({
   },
 });
 
+export const listSchoolsForUrlAudit = query({
+  args: {
+    limit: v.optional(v.number()),
+    staleDays: v.optional(v.number()),
+    forceAuditAllBefore: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const limit = Math.max(1, Math.min(50, args.limit ?? 10));
+    const staleDays = args.staleDays ?? 30;
+    const cutoff = Date.now() - staleDays * 24 * 60 * 60 * 1000;
+    const forceBefore = args.forceAuditAllBefore;
+
+    const out: Array<Record<string, unknown>> = [];
+    const seen = new Set<string>();
+
+    // Tier 1: explicit pending.
+    const pending = await ctx.db
+      .query("schools")
+      .withIndex("by_audit_status", (q) => q.eq("auditStatus", "pending"))
+      .take(limit);
+    for (const s of pending) {
+      out.push(s);
+      seen.add(s._id);
+    }
+
+    const remaining1 = limit - out.length;
+    if (remaining1 <= 0) return out;
+
+    // Tier 2: stale by auditLastCheckedAt OR forced cutoff.
+    const effectiveCutoff = forceBefore ? Math.min(cutoff, forceBefore) : cutoff;
+
+    const stale = await ctx.db
+      .query("schools")
+      .withIndex("by_audit_last_checked", (q) => q.lt("auditLastCheckedAt", effectiveCutoff))
+      .take(remaining1);
+    for (const s of stale) {
+      if (seen.has(s._id)) continue;
+      out.push(s);
+      seen.add(s._id);
+    }
+
+    const remaining2 = limit - out.length;
+    if (remaining2 <= 0) return out;
+
+    // Missing auditLastCheckedAt (not indexed because it's optional): scan small dataset.
+    const scan = await ctx.db.query("schools").take(5000);
+    for (const s of scan) {
+      if (out.length >= limit) break;
+      if (seen.has(s._id)) continue;
+      if (!s.auditLastCheckedAt) {
+        out.push(s);
+        seen.add(s._id);
+      }
+    }
+
+    return out;
+  },
+});
+
 export const patchSchoolUrls = mutation({
   args: {
     schoolId: v.id("schools"),
@@ -45,9 +104,26 @@ export const patchSchoolUrls = mutation({
     if (args.websiteUrl !== undefined) patch.websiteUrl = args.websiteUrl;
     if (args.announcementsUrl !== undefined)
       patch.announcementsUrl = args.announcementsUrl;
-    if (args.auditNote !== undefined) patch.websiteValidationReasons = [args.auditNote];
+    if (args.auditNote !== undefined)
+      patch.websiteValidationReasons = [args.auditNote];
 
     await ctx.db.patch(args.schoolId, patch);
+    return { ok: true };
+  },
+});
+
+export const recordUrlAuditCheck = mutation({
+  args: {
+    schoolId: v.id("schools"),
+    status: v.optional(v.string()),
+    checkedAt: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.schoolId, {
+      auditLastCheckedAt: args.checkedAt,
+      auditStatus: args.status,
+      updatedAt: Date.now(),
+    });
     return { ok: true };
   },
 });
