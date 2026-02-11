@@ -122,6 +122,23 @@ export const getDashboardForUser = query({
       .order("desc")
       .take(1);
 
+    const latestSnapshots = await Promise.all(
+      schoolIds.map((schoolId) =>
+        ctx.db
+          .query("school_page_snapshots")
+          .withIndex("by_school", (q) => q.eq("schoolId", schoolId))
+          .order("desc")
+          .take(1),
+      ),
+    );
+
+    const lastCheckedAt = Math.max(
+      0,
+      ...latestSnapshots
+        .flat()
+        .map((s) => (typeof s.fetchedAt === "number" ? s.fetchedAt : 0)),
+    );
+
     return {
       ok: true,
       user: {
@@ -138,6 +155,10 @@ export const getDashboardForUser = query({
         : null,
       schools: schools.filter((s): s is NonNullable<typeof s> => !!s),
       monitoring: latestMonitoringRun[0] ?? null,
+      userMonitoringStatus: {
+        trackedCount: schoolIds.length,
+        lastCheckedAt: lastCheckedAt > 0 ? lastCheckedAt : null,
+      },
       updates: limited,
       sinceCounts,
     };

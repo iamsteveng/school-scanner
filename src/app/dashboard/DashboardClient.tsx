@@ -75,14 +75,30 @@ export default function DashboardClient() {
               "Loading…"
             )}
           </p>
-          <div className="mt-3 text-xs text-slate-600">
-            Monitoring: <span className="font-semibold">{monitoringLabel}</span>
-            {dashboard?.monitoring?.finishedAt ? (
-              <>
-                {" "}
-                (last run: {formatTs(dashboard.monitoring.finishedAt)})
-              </>
-            ) : null}
+          <div className="mt-3 space-y-1 text-xs text-slate-600">
+            <div>
+              📡 監察中 • 已追蹤：
+              <span className="font-semibold">
+                {dashboard?.userMonitoringStatus?.trackedCount ?? 0}
+              </span>
+              間學校
+              {dashboard?.userMonitoringStatus?.lastCheckedAt ? (
+                <>
+                  {" "}
+                  • 最後檢查：{formatTs(dashboard.userMonitoringStatus.lastCheckedAt)}
+                </>
+              ) : null}
+            </div>
+
+            <div>
+              System monitoring: <span className="font-semibold">{monitoringLabel}</span>
+              {dashboard?.monitoring?.finishedAt ? (
+                <>
+                  {" "}
+                  (last run: {formatTs(dashboard.monitoring.finishedAt)})
+                </>
+              ) : null}
+            </div>
           </div>
 
           {sinceAt && dashboard?.sinceCounts ? (
