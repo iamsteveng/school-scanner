@@ -10,6 +10,7 @@
 
 import type * as aiActions from "../aiActions.js";
 import type * as crons from "../crons.js";
+import type * as dashboardQueries from "../dashboardQueries.js";
 import type * as eventActions from "../eventActions.js";
 import type * as eventMutations from "../eventMutations.js";
 import type * as health from "../health.js";
@@ -43,6 +44,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   aiActions: typeof aiActions;
   crons: typeof crons;
+  dashboardQueries: typeof dashboardQueries;
   eventActions: typeof eventActions;
   eventMutations: typeof eventMutations;
   health: typeof health;
