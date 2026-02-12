@@ -1,32 +1,61 @@
 import { internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 
-// DANGEROUS: wipes derived data created by scheduled jobs during development.
-// Use only when you intentionally want to reset monitoring/audit/event outputs.
-export const wipeCronGeneratedData = internalMutation({
+// DANGEROUS: development-only cleanup helpers.
+// Convex has a per-function read limit (bytes). To stay under it, we delete in small batches
+// and only operate on ONE table per invocation.
+
+type TableName =
+  | "school_page_snapshots"
+  | "announcements"
+  | "events"
+  | "monitoring_runs"
+  | "url_audit_fixes"
+  | "url_audit_state";
+
+export const wipeTableBatch = internalMutation({
+  args: {
+    confirm: v.literal("WIPE_CRON_DATA"),
+    table: v.union(
+      v.literal("school_page_snapshots"),
+      v.literal("announcements"),
+      v.literal("events"),
+      v.literal("monitoring_runs"),
+      v.literal("url_audit_fixes"),
+      v.literal("url_audit_state"),
+    ),
+    batchSize: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const batchSize = Math.max(1, Math.min(20, args.batchSize ?? 5));
+
+    // Read only a handful of full documents to stay under Convex read byte limits.
+    const batch = await ctx.db
+      .query(args.table as TableName)
+      .order("desc")
+      .take(batchSize);
+
+    for (const row of batch) {
+      await ctx.db.delete(row._id);
+    }
+
+    return {
+      ok: true,
+      table: args.table,
+      deleted: batch.length,
+      done: batch.length < batchSize,
+      batchSize,
+    };
+  },
+});
+
+export const resetSchoolsAuditMonitoringFields = internalMutation({
   args: { confirm: v.literal("WIPE_CRON_DATA") },
   handler: async (ctx) => {
-    // Delete in a safe order (children first).
-    const schoolPageSnapshots = await ctx.db.query("school_page_snapshots").collect();
-    for (const row of schoolPageSnapshots) await ctx.db.delete(row._id);
+    // Schools dataset is currently small; patch in a single pass.
+    const schools = await ctx.db.query("schools").take(5000);
+    const now = Date.now();
 
-    const announcements = await ctx.db.query("announcements").collect();
-    for (const row of announcements) await ctx.db.delete(row._id);
-
-    const events = await ctx.db.query("events").collect();
-    for (const row of events) await ctx.db.delete(row._id);
-
-    const monitoringRuns = await ctx.db.query("monitoring_runs").collect();
-    for (const row of monitoringRuns) await ctx.db.delete(row._id);
-
-    const urlAuditFixes = await ctx.db.query("url_audit_fixes").collect();
-    for (const row of urlAuditFixes) await ctx.db.delete(row._id);
-
-    const urlAuditState = await ctx.db.query("url_audit_state").collect();
-    for (const row of urlAuditState) await ctx.db.delete(row._id);
-
-    // Reset school audit/monitoring fields so the next cron run repopulates cleanly.
-    const schools = await ctx.db.query("schools").collect();
     for (const s of schools) {
       await ctx.db.patch(s._id, {
         announcementsUrl: undefined,
@@ -39,21 +68,10 @@ export const wipeCronGeneratedData = internalMutation({
         needsWebsiteReview: undefined,
         auditStatus: undefined,
         auditLastCheckedAt: undefined,
-        updatedAt: Date.now(),
+        updatedAt: now,
       });
     }
 
-    return {
-      ok: true,
-      deleted: {
-        school_page_snapshots: schoolPageSnapshots.length,
-        announcements: announcements.length,
-        events: events.length,
-        monitoring_runs: monitoringRuns.length,
-        url_audit_fixes: urlAuditFixes.length,
-        url_audit_state: urlAuditState.length,
-        schools_patched: schools.length,
-      },
-    };
+    return { ok: true, schoolsPatched: schools.length };
   },
 });
