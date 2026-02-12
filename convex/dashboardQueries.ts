@@ -51,6 +51,8 @@ export const getDashboardForUser = query({
           eventAt?: number;
           registrationOpenAt?: number;
           registrationCloseAt?: number;
+          quota?: number;
+          targetAdmissionYear?: string;
           confidence?: number;
         }
     > = [];
@@ -96,6 +98,8 @@ export const getDashboardForUser = query({
           eventAt: e.eventAt,
           registrationOpenAt: e.registrationOpenAt,
           registrationCloseAt: e.registrationCloseAt,
+          quota: e.quota,
+          targetAdmissionYear: e.targetAdmissionYear,
           confidence: e.confidence,
         });
       }

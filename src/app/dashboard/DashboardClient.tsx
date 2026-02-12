@@ -157,6 +157,36 @@ export default function DashboardClient() {
                     {u.schoolNameZh} • {formatTs(u.at)}
                     {u.kind === "announcement" ? ` • ${u.changeType}` : ""}
                   </div>
+
+                  {u.kind === "event" ? (
+                    <div className="mt-2 grid grid-cols-1 gap-1 text-xs text-slate-700 md:grid-cols-2">
+                      {u.eventAt ? (
+                        <div>
+                          <span className="font-semibold">Event:</span> {formatTs(u.eventAt)}
+                        </div>
+                      ) : null}
+                      {u.registrationOpenAt ? (
+                        <div>
+                          <span className="font-semibold">Reg opens:</span> {formatTs(u.registrationOpenAt)}
+                        </div>
+                      ) : null}
+                      {u.registrationCloseAt ? (
+                        <div>
+                          <span className="font-semibold">Reg closes:</span> {formatTs(u.registrationCloseAt)}
+                        </div>
+                      ) : null}
+                      {typeof u.quota === "number" ? (
+                        <div>
+                          <span className="font-semibold">Quota:</span> {u.quota}
+                        </div>
+                      ) : null}
+                      {u.targetAdmissionYear ? (
+                        <div className="md:col-span-2">
+                          <span className="font-semibold">Target admission year:</span> {u.targetAdmissionYear}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                   <div className="mt-2">
                     <a
                       className="text-sm font-semibold text-emerald-700 hover:underline"
