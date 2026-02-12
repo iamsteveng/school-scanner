@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as adminMutations from "../adminMutations.js";
 import type * as aiActions from "../aiActions.js";
 import type * as crons from "../crons.js";
 import type * as dashboardQueries from "../dashboardQueries.js";
@@ -42,6 +43,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  adminMutations: typeof adminMutations;
   aiActions: typeof aiActions;
   crons: typeof crons;
   dashboardQueries: typeof dashboardQueries;
