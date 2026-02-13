@@ -18,11 +18,48 @@ export const monitoringCron: ReturnType<typeof internalAction> = internalAction(
     limitPagesPerSchool: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    // Run the public action from an internal cron entrypoint.
-    return await ctx.runAction(api.monitoringActions.runMonitoringOnceAction, {
-      limitSchools: args.limitSchools,
+    // Daily kickoff: reset paging cursor so batch cron can sweep all schools.
+    await ctx.runMutation(internal.monitoringState.ensureState, {});
+    await ctx.runMutation(internal.monitoringState.startNewDailyRun, {});
+
+    // Also run one batch immediately (optional) so we don't wait 10 mins for the first tick.
+    return await ctx.runAction(api.monitoringBatchActions.runMonitoringBatchAction, {
+      cursor: undefined,
+      limitSchools: args.limitSchools ?? 25,
       limitPagesPerSchool: args.limitPagesPerSchool,
     });
+  },
+});
+
+export const monitoringBatchCron: ReturnType<typeof internalAction> = internalAction({
+  args: {
+    limitSchools: v.optional(v.number()),
+    limitPagesPerSchool: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.runMutation(internal.monitoringState.ensureState, {});
+    const state = await ctx.runQuery(api.monitoringState.getState, {});
+    if (!state?.running) {
+      return { ok: true, skipped: true };
+    }
+
+    const result = await ctx.runAction(api.monitoringBatchActions.runMonitoringBatchAction, {
+      cursor: state.cursor,
+      limitSchools: args.limitSchools ?? 25,
+      limitPagesPerSchool: args.limitPagesPerSchool,
+    });
+
+    if (result && typeof result === "object") {
+      const r = result as Record<string, unknown>;
+      const cursorOut = typeof r.cursorOut === "string" ? r.cursorOut : undefined;
+      const isDone = !!r.isDone;
+      await ctx.runMutation(internal.monitoringState.updateAfterBatch, {
+        cursor: cursorOut,
+        isDone,
+      });
+    }
+
+    return result;
   },
 });
 
