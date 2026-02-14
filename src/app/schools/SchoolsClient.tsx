@@ -111,6 +111,10 @@ export default function SchoolsClient() {
         userId,
         schoolIds: selectedIds,
       });
+      if (!result.ok) {
+        setStatus(result.message);
+        return;
+      }
       if (result.lockedAt && plan === "FREE") {
         setStatus("Saved. Your Free plan selection is now locked until upgrade.");
       } else {

@@ -1,0 +1,25 @@
+# Progress Log
+Run: ebd6d936-158f-4b67-9e89-31f23f69c17b
+Task: School Scanner — Phase 4.3 Edit School CTA Gating
+Started: 2026-02-14 15:22 UTC
+
+## Codebase Patterns
+- Convex mutation handlers can return typed result unions (e.g., `{ ok: true | false, code }`) for frontend-safe branching without parsing error strings.
+- `shared/selectionRules.ts` is the shared backend/frontend-friendly policy location for selection gating; keep lock/limit checks there for consistent enforcement.
+
+---
+
+## 2026-02-14 15:26 UTC - US-001: Add explicit backend upgrade-required result for school selection edits
+- Refactored `shared/selectionRules.ts` to add typed guard outcomes (`OK`, `FREE_LIMIT_EXCEEDED`, `UPGRADE_REQUIRED`) via `getSelectionGuardOutcome` while preserving `assertSelectionAllowed` behavior.
+- Updated `convex/userSelections.ts` to enforce server-side selection lock through typed guard results and return explicit typed mutation outcomes (`ok/code/message`) for blocked free-plan edits.
+- Added `saveForUserInternal` for testable business logic and kept mutation wiring in `saveForUser`.
+- Updated `src/app/schools/SchoolsClient.tsx` to safely handle non-ok mutation results.
+- Added backend-focused tests for locked free-user upgrade-required contract and premium edit success.
+- **Files changed:**
+  - `shared/selectionRules.ts`
+  - `convex/userSelections.ts`
+  - `src/app/schools/SchoolsClient.tsx`
+  - `tests/selectionRules.test.ts`
+  - `tests/userSelections.test.ts`
+- **Learnings:** Next build requires `NEXT_PUBLIC_CONVEX_URL` in environment for prerendering.
+---
