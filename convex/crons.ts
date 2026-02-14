@@ -10,12 +10,21 @@ crons.interval(
   { label: "dev-noop" },
 );
 
-// MVP cadence: once per 24 hours.
+// Monitoring cadence:
+// - daily kickoff resets cursor
+// - batch cron sweeps through all schools in chunks
 crons.interval(
   "monitoring-cron",
   { hours: 24 },
   internal.jobs.monitoringCron,
-  { limitSchools: 50, limitPagesPerSchool: 3 },
+  { limitSchools: 25, limitPagesPerSchool: 3 },
+);
+
+crons.interval(
+  "monitoring-batch-cron",
+  { minutes: 10 },
+  internal.jobs.monitoringBatchCron,
+  { limitSchools: 25, limitPagesPerSchool: 3 },
 );
 
 // Phase 2.1a: monthly refresh of the schools seed snapshot.

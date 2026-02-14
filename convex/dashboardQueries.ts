@@ -51,6 +51,8 @@ export const getDashboardForUser = query({
           eventAt?: number;
           registrationOpenAt?: number;
           registrationCloseAt?: number;
+          quota?: number;
+          targetAdmissionYear?: string;
           confidence?: number;
         }
     > = [];
@@ -84,7 +86,20 @@ export const getDashboardForUser = query({
         .order("desc")
         .take(perSchoolLimit);
 
+      const now = Date.now();
       for (const e of evs) {
+        const effectiveAt =
+          typeof e.eventAt === "number"
+            ? e.eventAt
+            : typeof e.registrationCloseAt === "number"
+              ? e.registrationCloseAt
+              : null;
+
+        // Only show future events (or unknown-dated events) on the dashboard.
+        if (effectiveAt !== null && effectiveAt < now) {
+          continue;
+        }
+
         updates.push({
           kind: "event",
           schoolId: String(e.schoolId),
@@ -96,6 +111,8 @@ export const getDashboardForUser = query({
           eventAt: e.eventAt,
           registrationOpenAt: e.registrationOpenAt,
           registrationCloseAt: e.registrationCloseAt,
+          quota: e.quota,
+          targetAdmissionYear: e.targetAdmissionYear,
           confidence: e.confidence,
         });
       }
@@ -122,6 +139,16 @@ export const getDashboardForUser = query({
       .order("desc")
       .take(1);
 
+    // "Last checked" should reflect monitoring freshness for the user's selected schools.
+    // Use the per-school websiteLastCheckedAt (set by monitoring) rather than snapshots,
+    // because we may not snapshot every school on every run.
+    const lastCheckedAt = Math.max(
+      0,
+      ...schools
+        .filter((s): s is NonNullable<typeof s> => !!s)
+        .map((s) => (typeof s.websiteLastCheckedAt === "number" ? s.websiteLastCheckedAt : 0)),
+    );
+
     return {
       ok: true,
       user: {
@@ -138,6 +165,10 @@ export const getDashboardForUser = query({
         : null,
       schools: schools.filter((s): s is NonNullable<typeof s> => !!s),
       monitoring: latestMonitoringRun[0] ?? null,
+      userMonitoringStatus: {
+        trackedCount: schoolIds.length,
+        lastCheckedAt: lastCheckedAt > 0 ? lastCheckedAt : null,
+      },
       updates: limited,
       sinceCounts,
     };

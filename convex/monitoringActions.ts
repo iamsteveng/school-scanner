@@ -228,6 +228,7 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
     limitSchools: v.optional(v.number()),
     limitPagesPerSchool: v.optional(v.number()),
     schoolQuery: v.optional(v.string()),
+    schoolIds: v.optional(v.array(v.id("schools"))),
   },
   handler: async (ctx, args) => {
     const startedAt = Date.now();
@@ -312,10 +313,14 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
     const limitPagesPerSchool = args.limitPagesPerSchool ?? 3;
     const maxPagesPerRun = 150;
 
-    const schools = await ctx.runQuery(api.monitoringQueries.getSchoolsForMonitoring, {
-      limit: limitSchools,
-      q: args.schoolQuery,
-    });
+    const schools = args.schoolIds?.length
+      ? await Promise.all(args.schoolIds.map((id) => ctx.runQuery(api.schools.getSchoolById, { schoolId: id })))
+      : await ctx.runQuery(api.monitoringQueries.getSchoolsForMonitoring, {
+          limit: limitSchools,
+          q: args.schoolQuery,
+        });
+
+    const schoolsFiltered = schools.filter((s): s is NonNullable<typeof s> => !!s);
 
     let schoolsChecked = 0;
     let pagesFetched = 0;
@@ -324,7 +329,7 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
     let changesNone = 0;
     let errors = 0;
 
-    for (const school of schools) {
+    for (const school of schoolsFiltered) {
       schoolsChecked += 1;
       const rootUrl = school.announcementsUrl ?? school.websiteUrl;
 

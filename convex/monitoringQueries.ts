@@ -9,18 +9,35 @@ export const getSchoolsForMonitoring = query({
     const q = args.q?.trim().toLowerCase();
 
     // If searching, scan a bigger slice (no full-text index yet).
-    const scanLimit = q ? Math.max(limit, 5000) : limit;
+    const scanLimit = q ? Math.max(limit, 5000) : 5000;
     const schools = await ctx.db.query("schools").take(scanLimit);
 
-    if (!q) return schools.slice(0, limit);
+    if (q) {
+      return schools
+        .filter(
+          (s) =>
+            s.nameEn.toLowerCase().includes(q) ||
+            s.nameZh.toLowerCase().includes(q),
+        )
+        .slice(0, limit);
+    }
 
-    return schools
-      .filter(
-        (s) =>
-          s.nameEn.toLowerCase().includes(q) ||
-          s.nameZh.toLowerCase().includes(q),
-      )
-      .slice(0, limit);
+    // Prioritize schools that are actually selected by users.
+    const selections = await ctx.db.query("user_school_selections").take(5000);
+    const tracked = new Set<string>();
+    for (const sel of selections) {
+      for (const id of sel.schoolIds) tracked.add(String(id));
+    }
+
+    const trackedSchools = schools
+      .filter((s) => tracked.has(String(s._id)))
+      .sort((a, b) => (a.websiteLastCheckedAt ?? 0) - (b.websiteLastCheckedAt ?? 0));
+
+    const untrackedSchools = schools
+      .filter((s) => !tracked.has(String(s._id)))
+      .sort((a, b) => (a.websiteLastCheckedAt ?? 0) - (b.websiteLastCheckedAt ?? 0));
+
+    return [...trackedSchools, ...untrackedSchools].slice(0, limit);
   },
 });
 

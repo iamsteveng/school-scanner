@@ -107,6 +107,13 @@ export default defineSchema({
     errors: v.number(),
   }),
 
+  monitoring_state: defineTable({
+    running: v.boolean(),
+    cursor: v.optional(v.string()),
+    startedAt: v.optional(v.number()),
+    updatedAt: v.number(),
+  }),
+
   school_page_snapshots: defineTable({
     schoolId: v.id("schools"),
     url: v.string(),
