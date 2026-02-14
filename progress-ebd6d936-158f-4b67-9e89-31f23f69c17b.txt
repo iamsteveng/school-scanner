@@ -23,3 +23,12 @@ Started: 2026-02-14 15:22 UTC
   - `tests/userSelections.test.ts`
 - **Learnings:** Next build requires `NEXT_PUBLIC_CONVEX_URL` in environment for prerendering.
 ---
+
+## 2026-02-14 18:50 UTC - US-001: Typecheck stabilization follow-up
+- Fixed `tests/verificationFlow.test.ts` FakeDb `getAll` typing via overloads so returned docs are table-specific and no longer inferred as broad unions.
+- This resolves TS2339 errors on `phone`/`verifiedAt` during `npx tsc --noEmit`.
+- Re-ran full typecheck, test suite, and production build successfully.
+- **Files changed:**
+  - `tests/verificationFlow.test.ts`
+  - `progress-ebd6d936-158f-4b67-9e89-31f23f69c17b.txt`
+---
