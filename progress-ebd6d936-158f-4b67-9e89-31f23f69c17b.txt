@@ -7,6 +7,7 @@ Started: 2026-02-14 15:22 UTC
 - Convex mutation handlers can return typed result unions (e.g., `{ ok: true | false, code }`) for frontend-safe branching without parsing error strings.
 - `shared/selectionRules.ts` is the shared backend/frontend-friendly policy location for selection gating; keep lock/limit checks there for consistent enforcement.
 - Frontend component tests in this repo commonly mock `next/navigation` router methods and `convex/react` hooks, then pass query payloads that avoid unrelated redirect effects.
+- Client analytics calls should live behind `src/lib/analytics.ts` and be wrapped in UI-level `try/catch` so tracking failures never block navigation flows.
 
 ---
 
@@ -55,4 +56,15 @@ Started: 2026-02-14 15:22 UTC
   - `tests/dashboardEditCtaGating.test.tsx`
   - `progress-ebd6d936-158f-4b67-9e89-31f23f69c17b.txt`
 - **Learnings:** Dashboard client can be reliably component-tested by mocking `convex/react` `useQuery` and `next/navigation` router methods, while supplying selection data to avoid redirect-side effects.
+---
+## 2026-02-15 02:55 UTC - US-004: Instrument upgrade CTA click from dashboard gating modal (if analytics hook exists)
+- Added a minimal app-boundary analytics adapter at `src/lib/analytics.ts` with a typed `trackEvent` helper for `upgrade_cta_clicked` and a documented no-op fallback when analytics infra is not wired.
+- Updated dashboard upgrade CTA handler to emit `upgrade_cta_clicked` with `{ source: "dashboard_edit_modal" }` and wrapped tracking in `try/catch` so CTA navigation to `/upgrade` is never blocked by analytics failures.
+- Extended dashboard CTA gating tests to validate tracking emission and non-blocking navigation behavior when tracking throws.
+- **Files changed:**
+  - `src/lib/analytics.ts`
+  - `src/app/dashboard/DashboardClient.tsx`
+  - `tests/dashboardEditCtaGating.test.tsx`
+  - `progress-ebd6d936-158f-4b67-9e89-31f23f69c17b.txt`
+- **Learnings:** For low-scope instrumentation, a thin analytics abstraction avoids coupling feature UI to specific providers and keeps failure handling localized.
 ---

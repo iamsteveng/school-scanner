@@ -6,6 +6,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { getSessionUserId } from "../../lib/session";
 import { useRouter } from "next/navigation";
+import { trackEvent } from "../../lib/analytics";
 
 function formatTs(ts: number): string {
   try {
@@ -239,6 +240,13 @@ export default function DashboardClient() {
                 type="button"
                 className="rounded-full bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500"
                 onClick={() => {
+                  try {
+                    trackEvent("upgrade_cta_clicked", {
+                      source: "dashboard_edit_modal",
+                    });
+                  } catch {
+                    // Intentionally swallow analytics failures so upgrade navigation still works.
+                  }
                   setShowUpgradeModal(false);
                   router.push("/upgrade");
                 }}
