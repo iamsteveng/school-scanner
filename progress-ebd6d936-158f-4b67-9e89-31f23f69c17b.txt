@@ -8,6 +8,7 @@ Started: 2026-02-14 15:22 UTC
 - `shared/selectionRules.ts` is the shared backend/frontend-friendly policy location for selection gating; keep lock/limit checks there for consistent enforcement.
 - Frontend component tests in this repo commonly mock `next/navigation` router methods and `convex/react` hooks, then pass query payloads that avoid unrelated redirect effects.
 - Client analytics calls should live behind `src/lib/analytics.ts` and be wrapped in UI-level `try/catch` so tracking failures never block navigation flows.
+- Task-brief documentation QA can be enforced with lightweight file-content tests (Vitest + `readFileSync`) to guard required sections, PR evidence commands, and screenshot checklist entries.
 
 ---
 
@@ -67,4 +68,15 @@ Started: 2026-02-14 15:22 UTC
   - `tests/dashboardEditCtaGating.test.tsx`
   - `progress-ebd6d936-158f-4b67-9e89-31f23f69c17b.txt`
 - **Learnings:** For low-scope instrumentation, a thin analytics abstraction avoids coupling feature UI to specific providers and keeps failure handling localized.
+---
+## 2026-02-15 04:05 UTC - US-005: Update task brief and PR evidence for Phase 4.3 rollout
+- Added `docs/tasks/phase-4-3-edit-school-cta-gating.md` with completed implementation notes covering backend gate behavior, frontend modal gating behavior, analytics instrumentation, test commands/results, and a ready-to-paste PR summary.
+- Added explicit visual-proof checklist entries (`free-edit-upgrade-modal.png`, `premium-edit-entry.png`, `dashboard-edit-gating.gif`) so reviewers can quickly validate Free/Premium dashboard paths from PR evidence.
+- Added `tests/phase43DocsChecklist.test.ts` to enforce documentation checklist requirements for Phase 4.3 (gating decisions, PR test evidence, and visual-proof references).
+- Re-ran full quality checks to keep CI green.
+- **Files changed:**
+  - `docs/tasks/phase-4-3-edit-school-cta-gating.md`
+  - `tests/phase43DocsChecklist.test.ts`
+  - `progress-ebd6d936-158f-4b67-9e89-31f23f69c17b.txt`
+- **Learnings:** Documentation acceptance criteria can be made regression-safe by codifying them as file-content tests rather than relying on manual reviewer memory.
 ---
