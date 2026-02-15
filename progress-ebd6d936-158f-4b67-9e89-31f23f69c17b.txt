@@ -32,3 +32,13 @@ Started: 2026-02-14 15:22 UTC
   - `tests/verificationFlow.test.ts`
   - `progress-ebd6d936-158f-4b67-9e89-31f23f69c17b.txt`
 ---
+
+## 2026-02-15 02:33 UTC - US-002: Add backend tests proving lock cannot be bypassed via direct mutation
+- Expanded `saveForUserInternal` backend tests to directly validate mutation bypass protection rules for free vs premium plans.
+- Added explicit coverage for first Free save behavior: successful insert plus lock timestamp persistence.
+- Added stronger assertions for Premium edit behavior to verify persisted patch state and no insert side effects.
+- **Files changed:**
+  - `tests/userSelections.test.ts`
+  - `progress-ebd6d936-158f-4b67-9e89-31f23f69c17b.txt`
+- **Learnings:** Existing fake Convex DB test pattern stores raw insert/patch payloads in arrays; assert these payloads directly to verify persisted state transitions.
+---

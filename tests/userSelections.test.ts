@@ -40,6 +40,35 @@ function makeCtx(args: {
 }
 
 describe("saveForUserInternal", () => {
+  it("allows first free save and locks selection", async () => {
+    const { ctx, inserts, patches } = makeCtx({
+      plan: "FREE",
+      existingSelection: null,
+    });
+
+    const result = await saveForUserInternal(ctx, {
+      userId: "user-1",
+      schoolIds: ["school-1", "school-2"],
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result).toMatchObject({ code: "OK", selectionId: "selection-new" });
+    if (result.ok) {
+      expect(typeof result.lockedAt).toBe("number");
+    }
+
+    expect(inserts).toHaveLength(1);
+    expect(inserts[0]).toMatchObject({
+      table: "user_school_selections",
+      value: {
+        userId: "user-1",
+        schoolIds: ["school-1", "school-2"],
+      },
+    });
+    expect((inserts[0].value as { lockedAt?: unknown }).lockedAt).toEqual(expect.any(Number));
+    expect(patches).toHaveLength(0);
+  });
+
   it("returns explicit upgrade-required result for locked free users", async () => {
     const { ctx, patches, inserts } = makeCtx({
       plan: "FREE",
@@ -61,7 +90,7 @@ describe("saveForUserInternal", () => {
   });
 
   it("allows premium users to edit existing selection", async () => {
-    const { ctx, patches } = makeCtx({
+    const { ctx, patches, inserts } = makeCtx({
       plan: "PREMIUM",
       existingSelection: { _id: "selection-1", lockedAt: undefined },
     });
@@ -74,5 +103,13 @@ describe("saveForUserInternal", () => {
     expect(result.ok).toBe(true);
     expect(result).toMatchObject({ code: "OK", selectionId: "selection-1" });
     expect(patches).toHaveLength(1);
+    expect(patches[0]).toMatchObject({
+      id: "selection-1",
+      value: {
+        schoolIds: ["school-1", "school-2", "school-3"],
+      },
+    });
+    expect((patches[0].value as { lockedAt?: unknown }).lockedAt).toBeUndefined();
+    expect(inserts).toHaveLength(0);
   });
 });
