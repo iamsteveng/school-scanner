@@ -1,0 +1,82 @@
+# Progress Log
+Run: ebd6d936-158f-4b67-9e89-31f23f69c17b
+Task: School Scanner — Phase 4.3 Edit School CTA Gating
+Started: 2026-02-14 15:22 UTC
+
+## Codebase Patterns
+- Convex mutation handlers can return typed result unions (e.g., `{ ok: true | false, code }`) for frontend-safe branching without parsing error strings.
+- `shared/selectionRules.ts` is the shared backend/frontend-friendly policy location for selection gating; keep lock/limit checks there for consistent enforcement.
+- Frontend component tests in this repo commonly mock `next/navigation` router methods and `convex/react` hooks, then pass query payloads that avoid unrelated redirect effects.
+- Client analytics calls should live behind `src/lib/analytics.ts` and be wrapped in UI-level `try/catch` so tracking failures never block navigation flows.
+- Task-brief documentation QA can be enforced with lightweight file-content tests (Vitest + `readFileSync`) to guard required sections, PR evidence commands, and screenshot checklist entries.
+
+---
+
+## 2026-02-14 15:26 UTC - US-001: Add explicit backend upgrade-required result for school selection edits
+- Refactored `shared/selectionRules.ts` to add typed guard outcomes (`OK`, `FREE_LIMIT_EXCEEDED`, `UPGRADE_REQUIRED`) via `getSelectionGuardOutcome` while preserving `assertSelectionAllowed` behavior.
+- Updated `convex/userSelections.ts` to enforce server-side selection lock through typed guard results and return explicit typed mutation outcomes (`ok/code/message`) for blocked free-plan edits.
+- Added `saveForUserInternal` for testable business logic and kept mutation wiring in `saveForUser`.
+- Updated `src/app/schools/SchoolsClient.tsx` to safely handle non-ok mutation results.
+- Added backend-focused tests for locked free-user upgrade-required contract and premium edit success.
+- **Files changed:**
+  - `shared/selectionRules.ts`
+  - `convex/userSelections.ts`
+  - `src/app/schools/SchoolsClient.tsx`
+  - `tests/selectionRules.test.ts`
+  - `tests/userSelections.test.ts`
+- **Learnings:** Next build requires `NEXT_PUBLIC_CONVEX_URL` in environment for prerendering.
+---
+
+## 2026-02-14 18:50 UTC - US-001: Typecheck stabilization follow-up
+- Fixed `tests/verificationFlow.test.ts` FakeDb `getAll` typing via overloads so returned docs are table-specific and no longer inferred as broad unions.
+- This resolves TS2339 errors on `phone`/`verifiedAt` during `npx tsc --noEmit`.
+- Re-ran full typecheck, test suite, and production build successfully.
+- **Files changed:**
+  - `tests/verificationFlow.test.ts`
+  - `progress-ebd6d936-158f-4b67-9e89-31f23f69c17b.txt`
+---
+
+## 2026-02-15 02:33 UTC - US-002: Add backend tests proving lock cannot be bypassed via direct mutation
+- Expanded `saveForUserInternal` backend tests to directly validate mutation bypass protection rules for free vs premium plans.
+- Added explicit coverage for first Free save behavior: successful insert plus lock timestamp persistence.
+- Added stronger assertions for Premium edit behavior to verify persisted patch state and no insert side effects.
+- **Files changed:**
+  - `tests/userSelections.test.ts`
+  - `progress-ebd6d936-158f-4b67-9e89-31f23f69c17b.txt`
+- **Learnings:** Existing fake Convex DB test pattern stores raw insert/patch payloads in arrays; assert these payloads directly to verify persisted state transitions.
+---
+
+## 2026-02-15 02:46 UTC - US-003: Gate Dashboard Edit Schools CTA with upgrade modal for Free plan
+- Updated `DashboardClient` edit CTA to branch by `dashboard.user.plan`: Free users open an in-page upgrade modal, Premium users navigate directly to `/schools`.
+- Added modal copy + actions (`Not now`, `Upgrade to Premium`) and wired upgrade CTA routing to `/upgrade`.
+- Added minimal `/upgrade` page stub to provide a valid upgrade destination aligned with app routes.
+- Added frontend tests covering both Free modal gating behavior and Premium direct edit flow routing.
+- **Files changed:**
+  - `src/app/dashboard/DashboardClient.tsx`
+  - `src/app/upgrade/page.tsx`
+  - `tests/dashboardEditCtaGating.test.tsx`
+  - `progress-ebd6d936-158f-4b67-9e89-31f23f69c17b.txt`
+- **Learnings:** Dashboard client can be reliably component-tested by mocking `convex/react` `useQuery` and `next/navigation` router methods, while supplying selection data to avoid redirect-side effects.
+---
+## 2026-02-15 02:55 UTC - US-004: Instrument upgrade CTA click from dashboard gating modal (if analytics hook exists)
+- Added a minimal app-boundary analytics adapter at `src/lib/analytics.ts` with a typed `trackEvent` helper for `upgrade_cta_clicked` and a documented no-op fallback when analytics infra is not wired.
+- Updated dashboard upgrade CTA handler to emit `upgrade_cta_clicked` with `{ source: "dashboard_edit_modal" }` and wrapped tracking in `try/catch` so CTA navigation to `/upgrade` is never blocked by analytics failures.
+- Extended dashboard CTA gating tests to validate tracking emission and non-blocking navigation behavior when tracking throws.
+- **Files changed:**
+  - `src/lib/analytics.ts`
+  - `src/app/dashboard/DashboardClient.tsx`
+  - `tests/dashboardEditCtaGating.test.tsx`
+  - `progress-ebd6d936-158f-4b67-9e89-31f23f69c17b.txt`
+- **Learnings:** For low-scope instrumentation, a thin analytics abstraction avoids coupling feature UI to specific providers and keeps failure handling localized.
+---
+## 2026-02-15 04:05 UTC - US-005: Update task brief and PR evidence for Phase 4.3 rollout
+- Added `docs/tasks/phase-4-3-edit-school-cta-gating.md` with completed implementation notes covering backend gate behavior, frontend modal gating behavior, analytics instrumentation, test commands/results, and a ready-to-paste PR summary.
+- Added explicit visual-proof checklist entries (`free-edit-upgrade-modal.png`, `premium-edit-entry.png`, `dashboard-edit-gating.gif`) so reviewers can quickly validate Free/Premium dashboard paths from PR evidence.
+- Added `tests/phase43DocsChecklist.test.ts` to enforce documentation checklist requirements for Phase 4.3 (gating decisions, PR test evidence, and visual-proof references).
+- Re-ran full quality checks to keep CI green.
+- **Files changed:**
+  - `docs/tasks/phase-4-3-edit-school-cta-gating.md`
+  - `tests/phase43DocsChecklist.test.ts`
+  - `progress-ebd6d936-158f-4b67-9e89-31f23f69c17b.txt`
+- **Learnings:** Documentation acceptance criteria can be made regression-safe by codifying them as file-content tests rather than relying on manual reviewer memory.
+---

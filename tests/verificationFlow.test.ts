@@ -111,6 +111,9 @@ class FakeDb {
     Object.assign(target, patch);
   }
 
+  getAll(table: "verification_tokens"): TokenDoc[];
+  getAll(table: "users"): UserDoc[];
+  getAll(table: "user_school_selections"): SelectionDoc[];
   getAll(table: "verification_tokens" | "users" | "user_school_selections") {
     if (table === "verification_tokens") {
       return this.tokens;
@@ -118,10 +121,7 @@ class FakeDb {
     if (table === "users") {
       return this.users;
     }
-    if (table === "user_school_selections") {
-      return this.selections;
-    }
-    return [];
+    return this.selections;
   }
 }
 

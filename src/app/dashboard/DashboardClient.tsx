@@ -6,6 +6,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { getSessionUserId } from "../../lib/session";
 import { useRouter } from "next/navigation";
+import { trackEvent } from "../../lib/analytics";
 
 function formatTs(ts: number): string {
   try {
@@ -43,6 +44,7 @@ export default function DashboardClient() {
   );
 
   const hasSelection = (dashboard?.selection?.schoolIds?.length ?? 0) > 0;
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   // Access control / redirects
   useEffect(() => {
@@ -54,6 +56,14 @@ export default function DashboardClient() {
       router.replace("/schools");
     }
   }, [router, userId, dashboard, hasSelection]);
+
+  const handleEditSchools = () => {
+    if ((dashboard?.user?.plan ?? "FREE") === "PREMIUM") {
+      router.push("/schools");
+      return;
+    }
+    setShowUpgradeModal(true);
+  };
 
   const monitoringLabel = useMemo(() => {
     if (!dashboard?.monitoring) return "No monitoring runs yet";
@@ -114,10 +124,10 @@ export default function DashboardClient() {
             <h2 className="text-lg font-semibold text-slate-900">Selected schools</h2>
             <button
               type="button"
-              onClick={() => router.push("/schools")}
+              onClick={handleEditSchools}
               className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm font-semibold text-slate-900 hover:bg-slate-50"
             >
-              View
+              Edit Schools
             </button>
           </div>
 
@@ -203,6 +213,50 @@ export default function DashboardClient() {
           </div>
         </section>
       </div>
+
+      {showUpgradeModal ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="upgrade-modal-title"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-xl">
+            <h3 id="upgrade-modal-title" className="text-lg font-semibold text-slate-900">
+              Upgrade to edit your schools
+            </h3>
+            <p className="mt-2 text-sm text-slate-600">
+              Free plan selections are locked after setup. Upgrade to Premium to edit your school list any time.
+            </p>
+            <div className="mt-5 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                className="rounded-full border border-slate-300 bg-white px-4 py-1.5 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+                onClick={() => setShowUpgradeModal(false)}
+              >
+                Not now
+              </button>
+              <button
+                type="button"
+                className="rounded-full bg-emerald-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-emerald-500"
+                onClick={() => {
+                  try {
+                    trackEvent("upgrade_cta_clicked", {
+                      source: "dashboard_edit_modal",
+                    });
+                  } catch {
+                    // Intentionally swallow analytics failures so upgrade navigation still works.
+                  }
+                  setShowUpgradeModal(false);
+                  router.push("/upgrade");
+                }}
+              >
+                Upgrade to Premium
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
