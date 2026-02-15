@@ -46,10 +46,13 @@ describe("saveForUserInternal", () => {
       existingSelection: null,
     });
 
-    const result = await saveForUserInternal(ctx, {
-      userId: "user-1",
-      schoolIds: ["school-1", "school-2"],
-    });
+    const result = await saveForUserInternal(
+      ctx as unknown as Parameters<typeof saveForUserInternal>[0],
+      {
+        userId: "user-1",
+        schoolIds: ["school-1", "school-2"],
+      } as unknown as Parameters<typeof saveForUserInternal>[1],
+    );
 
     expect(result.ok).toBe(true);
     expect(result).toMatchObject({ code: "OK", selectionId: "selection-new" });
@@ -75,10 +78,13 @@ describe("saveForUserInternal", () => {
       existingSelection: { _id: "selection-1", lockedAt: 1700000000000 },
     });
 
-    const result = await saveForUserInternal(ctx, {
-      userId: "user-1",
-      schoolIds: ["school-1", "school-2"],
-    });
+    const result = await saveForUserInternal(
+      ctx as unknown as Parameters<typeof saveForUserInternal>[0],
+      {
+        userId: "user-1",
+        schoolIds: ["school-1", "school-2"],
+      } as unknown as Parameters<typeof saveForUserInternal>[1],
+    );
 
     expect(result).toEqual({
       ok: false,
@@ -95,10 +101,13 @@ describe("saveForUserInternal", () => {
       existingSelection: { _id: "selection-1", lockedAt: undefined },
     });
 
-    const result = await saveForUserInternal(ctx, {
-      userId: "user-1",
-      schoolIds: ["school-1", "school-2", "school-3"],
-    });
+    const result = await saveForUserInternal(
+      ctx as unknown as Parameters<typeof saveForUserInternal>[0],
+      {
+        userId: "user-1",
+        schoolIds: ["school-1", "school-2", "school-3"],
+      } as unknown as Parameters<typeof saveForUserInternal>[1],
+    );
 
     expect(result.ok).toBe(true);
     expect(result).toMatchObject({ code: "OK", selectionId: "selection-1" });
