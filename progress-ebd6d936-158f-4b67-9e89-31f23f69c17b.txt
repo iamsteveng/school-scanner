@@ -6,6 +6,7 @@ Started: 2026-02-14 15:22 UTC
 ## Codebase Patterns
 - Convex mutation handlers can return typed result unions (e.g., `{ ok: true | false, code }`) for frontend-safe branching without parsing error strings.
 - `shared/selectionRules.ts` is the shared backend/frontend-friendly policy location for selection gating; keep lock/limit checks there for consistent enforcement.
+- Frontend component tests in this repo commonly mock `next/navigation` router methods and `convex/react` hooks, then pass query payloads that avoid unrelated redirect effects.
 
 ---
 
@@ -41,4 +42,17 @@ Started: 2026-02-14 15:22 UTC
   - `tests/userSelections.test.ts`
   - `progress-ebd6d936-158f-4b67-9e89-31f23f69c17b.txt`
 - **Learnings:** Existing fake Convex DB test pattern stores raw insert/patch payloads in arrays; assert these payloads directly to verify persisted state transitions.
+---
+
+## 2026-02-15 02:46 UTC - US-003: Gate Dashboard Edit Schools CTA with upgrade modal for Free plan
+- Updated `DashboardClient` edit CTA to branch by `dashboard.user.plan`: Free users open an in-page upgrade modal, Premium users navigate directly to `/schools`.
+- Added modal copy + actions (`Not now`, `Upgrade to Premium`) and wired upgrade CTA routing to `/upgrade`.
+- Added minimal `/upgrade` page stub to provide a valid upgrade destination aligned with app routes.
+- Added frontend tests covering both Free modal gating behavior and Premium direct edit flow routing.
+- **Files changed:**
+  - `src/app/dashboard/DashboardClient.tsx`
+  - `src/app/upgrade/page.tsx`
+  - `tests/dashboardEditCtaGating.test.tsx`
+  - `progress-ebd6d936-158f-4b67-9e89-31f23f69c17b.txt`
+- **Learnings:** Dashboard client can be reliably component-tested by mocking `convex/react` `useQuery` and `next/navigation` router methods, while supplying selection data to avoid redirect-side effects.
 ---
