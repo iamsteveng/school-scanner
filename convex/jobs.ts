@@ -15,11 +15,25 @@ export type DailyPremiumCandidate = {
   verifiedAt?: number;
 };
 
+export type WeeklyFreeCandidate = {
+  userId: Id<"users">;
+  phone: string;
+  plan: Doc<"users">["plan"];
+  verifiedAt?: number;
+};
+
 export function isDailyPremiumCandidate(user: {
   plan?: "FREE" | "PREMIUM";
   verifiedAt?: number;
 }): boolean {
   return user.plan === "PREMIUM" && typeof user.verifiedAt === "number";
+}
+
+export function isWeeklyFreeCandidate(user: {
+  plan?: "FREE" | "PREMIUM";
+  verifiedAt?: number;
+}): boolean {
+  return user.plan === "FREE" && typeof user.verifiedAt === "number";
 }
 
 export function getPreviousUtcDayWindow(nowMs: number): {
@@ -34,6 +48,21 @@ export function getPreviousUtcDayWindow(nowMs: number): {
   );
   const windowEnd = startOfTodayUtc - 1;
   const windowStart = windowEnd - (24 * 60 * 60 * 1000 - 1);
+  return { windowStart, windowEnd };
+}
+
+export function getPreviousUtcWeekWindow(nowMs: number): {
+  windowStart: number;
+  windowEnd: number;
+} {
+  const now = new Date(nowMs);
+  const startOfTodayUtc = Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+  );
+  const windowEnd = startOfTodayUtc - 1;
+  const windowStart = windowEnd - (7 * 24 * 60 * 60 * 1000 - 1);
   return { windowStart, windowEnd };
 }
 
@@ -54,6 +83,23 @@ function formatDailySummaryMessage(args: {
   ].join("\n");
 }
 
+function formatWeeklySummaryMessage(args: {
+  windowStart: number;
+  windowEnd: number;
+  updatedSchoolCount: number;
+  totalRelevantUpdates: number;
+  missedSchoolsCount: number;
+}): string {
+  const windowStartIso = new Date(args.windowStart).toISOString().slice(0, 10);
+  const windowEndIso = new Date(args.windowEnd).toISOString().slice(0, 10);
+  return [
+    `School Scanner weekly summary (${windowStartIso} to ${windowEndIso} UTC)`,
+    `Updated schools: ${args.updatedSchoolCount}`,
+    `Relevant updates: ${args.totalRelevantUpdates}`,
+    `Selected schools without updates: ${args.missedSchoolsCount}`,
+  ].join("\n");
+}
+
 export const listDailyPremiumCandidates = internalQuery({
   args: {
     limit: v.optional(v.number()),
@@ -64,6 +110,33 @@ export const listDailyPremiumCandidates = internalQuery({
 
     for (const user of users) {
       if (!isDailyPremiumCandidate(user)) {
+        continue;
+      }
+      candidates.push({
+        userId: user._id,
+        phone: user.phone,
+        plan: user.plan,
+        verifiedAt: user.verifiedAt,
+      });
+      if (args.limit && candidates.length >= args.limit) {
+        break;
+      }
+    }
+
+    return candidates;
+  },
+});
+
+export const listWeeklyFreeCandidates = internalQuery({
+  args: {
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args): Promise<WeeklyFreeCandidate[]> => {
+    const users = await ctx.db.query("users").collect();
+    const candidates: WeeklyFreeCandidate[] = [];
+
+    for (const user of users) {
+      if (!isWeeklyFreeCandidate(user)) {
         continue;
       }
       candidates.push({
@@ -226,6 +299,79 @@ export const runDailyPremiumSummaryDelivery: ReturnType<typeof internalAction> =
 
       return {
         cadence: "daily" as const,
+        windowStart,
+        windowEnd,
+        attempted: candidates.length,
+        sent,
+        skipped,
+        failed,
+      };
+    },
+  });
+
+export const runWeeklyFreeSummaryDelivery: ReturnType<typeof internalAction> =
+  internalAction({
+    args: {
+      windowStart: v.optional(v.number()),
+      windowEnd: v.optional(v.number()),
+      limitUsers: v.optional(v.number()),
+    },
+    handler: async (ctx, args) => {
+      const nowMs = Date.now();
+      const defaultWindow = getPreviousUtcWeekWindow(nowMs);
+      const windowStart = args.windowStart ?? defaultWindow.windowStart;
+      const windowEnd = args.windowEnd ?? defaultWindow.windowEnd;
+
+      const candidates = await ctx.runQuery(
+        internal.jobs.listWeeklyFreeCandidates,
+        { limit: args.limitUsers },
+      );
+
+      let sent = 0;
+      let skipped = 0;
+      let failed = 0;
+      for (const candidate of candidates) {
+        try {
+          const summary = await ctx.runAction(
+            internal.summaryGeneration.generateSummaryInternal,
+            {
+              userId: candidate.userId,
+              cadence: "weekly",
+              windowStart,
+              windowEnd,
+            },
+          );
+
+          if (summary.status !== "eligible") {
+            skipped += 1;
+            continue;
+          }
+
+          const token = `summary_weekly_${candidate.userId}_${windowStart}_${windowEnd}`;
+          await sendWhatsAppMessage({
+            ctx,
+            phone: candidate.phone,
+            token,
+            body: formatWeeklySummaryMessage({
+              windowStart,
+              windowEnd,
+              updatedSchoolCount: summary.updatedSchoolCount,
+              totalRelevantUpdates: summary.totalRelevantUpdates,
+              missedSchoolsCount: summary.missedSchoolsCount,
+            }),
+          });
+          sent += 1;
+        } catch (error) {
+          failed += 1;
+          console.error("weekly free summary send failed", {
+            userId: candidate.userId,
+            error: error instanceof Error ? error.message : "unknown_error",
+          });
+        }
+      }
+
+      return {
+        cadence: "weekly" as const,
         windowStart,
         windowEnd,
         attempted: candidates.length,

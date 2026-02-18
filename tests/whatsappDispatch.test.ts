@@ -87,4 +87,36 @@ describe("whatsapp dispatch helpers", () => {
       messageSid: "SM123",
     });
   });
+
+  it("logs successful sends for weekly delivery messages", async () => {
+    process.env.TWILIO_ACCOUNT_SID = "AC123";
+    process.env.TWILIO_AUTH_TOKEN = "secret";
+    process.env.TWILIO_WHATSAPP_FROM = "whatsapp:+12345678";
+    process.env.TWILIO_STATUS_CALLBACK_URL = undefined;
+
+    const runMutation = vi.fn().mockResolvedValue(undefined);
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ sid: "SM999" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const res = await sendWhatsAppMessage({
+      ctx: { runMutation },
+      phone: "+85212345678",
+      body: "Weekly summary",
+      token: "summary_weekly_user_1_1_7",
+    });
+
+    expect(res.ok).toBe(true);
+    expect(res.messageSid).toBe("SM999");
+    expect(runMutation).toHaveBeenCalledTimes(1);
+    expect(runMutation.mock.calls[0]?.[1]).toMatchObject({
+      phone: "+85212345678",
+      token: "summary_weekly_user_1_1_7",
+      status: "sent",
+      provider: "twilio",
+      messageSid: "SM999",
+    });
+  });
 });

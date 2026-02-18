@@ -52,4 +52,12 @@ crons.interval(
   {},
 );
 
+// Phase 5.2: FREE weekly summary delivery scheduler.
+crons.interval(
+  "weekly-free-summary-delivery-cron",
+  { hours: 24 * 7 },
+  internal.jobs.runWeeklyFreeSummaryDelivery,
+  {},
+);
+
 export default crons;
