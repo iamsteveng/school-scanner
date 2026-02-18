@@ -13,6 +13,32 @@ describe("summary generation entrypoint helper", () => {
     generatedAt: 123456,
   };
 
+  it("enforces tier/cadence matrix via entrypoint", () => {
+    const cases = [
+      { planInput: "FREE", requestedCadence: "daily" as const, status: "ineligible" as const, reason: "cadence_mismatch" as const },
+      { planInput: "FREE", requestedCadence: "weekly" as const, status: "eligible" as const },
+      { planInput: "PREMIUM", requestedCadence: "weekly" as const, status: "ineligible" as const, reason: "cadence_mismatch" as const },
+      { planInput: "PREMIUM", requestedCadence: "daily" as const, status: "eligible" as const },
+    ];
+
+    for (const c of cases) {
+      const result = generateSummaryForWindow({
+        ...baseArgs,
+        planInput: c.planInput,
+        requestedCadence: c.requestedCadence,
+        updates: [],
+      });
+
+      expect(result.status).toBe(c.status);
+      if (c.status === "ineligible") {
+        expect(result.status).toBe("ineligible");
+        if (result.status === "ineligible") {
+          expect(result.reason).toBe(c.reason);
+        }
+      }
+    }
+  });
+
   it("returns eligible output with scheduler metadata and payload", () => {
     const updates: SummaryUpdateRecord[] = [
       { schoolId: "school_a", updateId: "event_1", at: 150 },
@@ -53,6 +79,22 @@ describe("summary generation entrypoint helper", () => {
     });
   });
 
+  it("returns ineligible for invalid plan with typed reason", () => {
+    const result = generateSummaryForWindow({
+      ...baseArgs,
+      planInput: "ENTERPRISE",
+      updates: [],
+    });
+
+    expect(result).toEqual({
+      status: "ineligible",
+      reason: "invalid_plan",
+      userId: "user_1",
+      plan: "ENTERPRISE",
+      requestedCadence: "weekly",
+    });
+  });
+
   it("handles no selected schools and no updates gracefully", () => {
     const result = generateSummaryForWindow({
       ...baseArgs,
@@ -67,5 +109,18 @@ describe("summary generation entrypoint helper", () => {
     expect(result.missedSchoolsCount).toBe(0);
     expect(result.totalRelevantUpdates).toBe(0);
     expect(result.summaryPayload.missedSchoolsMessage).toBeNull();
+  });
+
+  it("returns error status when summary window is invalid", () => {
+    const result = generateSummaryForWindow({
+      ...baseArgs,
+      windowStart: 201,
+      windowEnd: 200,
+      updates: [],
+    });
+
+    expect(result.status).toBe("error");
+    if (result.status !== "error") return;
+    expect(result.reason).toContain("windowStart must be <= windowEnd");
   });
 });

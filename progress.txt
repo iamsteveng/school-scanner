@@ -7,6 +7,7 @@ Started: Wed Feb 18 08:41:46 UTC 2026
 - Summary aggregation should use inclusive windows and stable dedupe keys (`schoolId:updateId`) for deterministic counts
 - Missed-school messaging should be count-only (redacted) and generated from `missedSchoolsCount`, never school names
 - Scheduler-ready Convex actions should delegate result-shaping logic to shared/ pure helpers to keep job entrypoints thin and testable
+- For summary logic changes, keep matrix/outcome coverage in `tests/summaryGeneration.test.ts` and privacy edge cases in `tests/summaryAggregation.test.ts` together to prevent contract drift
 ---
 ## 2026-02-18 00:00:00 UTC - US-001
 Thread: https://ampcode.com/threads/
@@ -47,5 +48,16 @@ Thread: https://ampcode.com/threads/
 - **Learnings for future iterations:**
   - Patterns discovered (e.g., "Keep Convex scheduler entrypoints thin by delegating aggregation/status shaping to shared helpers")
   - Gotchas encountered (e.g., "After adding new Convex functions, run `npx convex codegen` so `_generated/api.d.ts` includes new references")
-  - Useful context (e.g., "Summary input query currently treats `events.updatedAt` as update timestamp and enforces inclusive window filtering")
+- Useful context (e.g., "Summary input query currently treats `events.updatedAt` as update timestamp and enforces inclusive window filtering")
+---
+## 2026-02-18 10:02:19 UTC - US-005
+Thread: https://ampcode.com/threads/
+- Added an explicit tier/cadence matrix test at the summary generation entrypoint, plus invalid-plan and invalid-window edge-case assertions for typed ineligible/error outcomes
+- Added a plural missed-schools redaction edge-case test to ensure count-only messaging never includes school names
+- Documented CI evidence for Phase 5.1 summary logic in `docs/tasks/phase-5-1-summary-generation-ci-evidence.md`, including local quality-gate results
+- Files changed: tests/summaryGeneration.test.ts, tests/summaryAggregation.test.ts, docs/tasks/phase-5-1-summary-generation-ci-evidence.md, shared/AGENTS.md, prd.json, progress.txt
+- **Learnings for future iterations:**
+  - Patterns discovered (e.g., "Summary contract changes should be validated at the entrypoint level with a table-driven plan/cadence matrix")
+  - Gotchas encountered (e.g., "Redaction regressions can hide in pluralization branches; test both singular and plural missed-school messages")
+  - Useful context (e.g., "Project quality gate for this repo is `npm run lint`, `npx tsc --noEmit`, and `npm test`")
 ---

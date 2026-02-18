@@ -7,3 +7,4 @@
 - For dedupe, use stable keys (`schoolId:updateId`) so repeated runs on the same dataset stay deterministic.
 - Missed-schools output must stay redacted: emit count-only text and never include school names.
 - Scheduler-facing summary generation composition belongs in shared/summaryGeneration.ts so Convex actions/crons and tests share one typed result contract.
+- When touching summary generation contracts, keep coverage aligned in both tests/summaryGeneration.test.ts (tier/cadence matrix + typed outcomes) and tests/summaryAggregation.test.ts (redaction + missed-school edge cases).

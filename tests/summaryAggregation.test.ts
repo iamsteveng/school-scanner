@@ -92,4 +92,19 @@ describe('summary aggregation', () => {
     expect(result.missedSchoolsMessage).not.toContain('Alpha Primary School')
     expect(result.missedSchoolsMessage).not.toContain('Beta Primary School')
   })
+
+  it('uses pluralized redacted message when multiple selected schools are missed', () => {
+    const result = aggregateSelectedSchoolUpdates({
+      selectedSchoolIds: ['Gamma Primary School', 'Delta Primary School', 'Epsilon Primary School'],
+      updates: [{ schoolId: 'Gamma Primary School', updateId: 'g-1', at: 101 }],
+      windowStart: 0,
+      windowEnd: 1_000,
+    })
+
+    expect(result.missedSchoolsCount).toBe(2)
+    expect(result.missedSchoolsMessage).toBe('2 selected schools had no updates in this window.')
+    expect(result.missedSchoolsMessage).not.toContain('Gamma Primary School')
+    expect(result.missedSchoolsMessage).not.toContain('Delta Primary School')
+    expect(result.missedSchoolsMessage).not.toContain('Epsilon Primary School')
+  })
 })

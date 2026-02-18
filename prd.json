@@ -72,7 +72,7 @@
         "CI evidence is documented in PR"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": ""
     }
   ]
