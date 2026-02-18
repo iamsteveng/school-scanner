@@ -4,6 +4,7 @@ Started: Wed Feb 18 08:41:46 UTC 2026
 ## Codebase Patterns
 - Centralize policy helpers in shared/ (e.g., cadencePolicy)
 - Keep plan/cadence checks in a single helper to avoid drift
+- Summary aggregation should use inclusive windows and stable dedupe keys (`schoolId:updateId`) for deterministic counts
 ---
 ## 2026-02-18 00:00:00 UTC - US-001
 Thread: https://ampcode.com/threads/
@@ -13,4 +14,14 @@ Thread: https://ampcode.com/threads/
   - Cadence rules: FREE weekly, PREMIUM daily
   - Add new cross-cutting helpers under shared/ to reuse across Convex and UI
   - Run vitest in repo; no server dependency for tests
+---
+## 2026-02-18 08:52:31 UTC - US-002
+Thread: https://ampcode.com/threads/
+- Implemented selected-school window aggregation helper with deterministic dedupe/count behavior
+- Added unit tests for selected-school filtering, inclusive window boundaries, and repeated-run determinism
+- Files changed: shared/summaryAggregation.ts, tests/summaryAggregation.test.ts, shared/AGENTS.md, prd.json
+- **Learnings for future iterations:**
+  - Patterns discovered (e.g., "Cross-cutting summary logic should stay in shared/ for reuse by Convex entrypoints and tests")
+  - Gotchas encountered (e.g., "Window checks should be inclusive to avoid boundary misses")
+  - Useful context (e.g., "Use stable dedupe key schoolId:updateId to keep counts deterministic")
 ---
