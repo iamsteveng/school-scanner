@@ -25,6 +25,7 @@ import type * as monitoringMutations from "../monitoringMutations.js";
 import type * as monitoringQueries from "../monitoringQueries.js";
 import type * as monitoringState from "../monitoringState.js";
 import type * as schools from "../schools.js";
+import type * as summaryGeneration from "../summaryGeneration.js";
 import type * as urlAuditFixes from "../urlAuditFixes.js";
 import type * as urlAuditState from "../urlAuditState.js";
 import type * as userSelections from "../userSelections.js";
@@ -62,6 +63,7 @@ declare const fullApi: ApiFromModules<{
   monitoringQueries: typeof monitoringQueries;
   monitoringState: typeof monitoringState;
   schools: typeof schools;
+  summaryGeneration: typeof summaryGeneration;
   urlAuditFixes: typeof urlAuditFixes;
   urlAuditState: typeof urlAuditState;
   userSelections: typeof userSelections;

@@ -1,0 +1,63 @@
+# Ralph Progress Log
+Started: Wed Feb 18 08:41:46 UTC 2026
+---
+## Codebase Patterns
+- Centralize policy helpers in shared/ (e.g., cadencePolicy)
+- Keep plan/cadence checks in a single helper to avoid drift
+- Summary aggregation should use inclusive windows and stable dedupe keys (`schoolId:updateId`) for deterministic counts
+- Missed-school messaging should be count-only (redacted) and generated from `missedSchoolsCount`, never school names
+- Scheduler-ready Convex actions should delegate result-shaping logic to shared/ pure helpers to keep job entrypoints thin and testable
+- For summary logic changes, keep matrix/outcome coverage in `tests/summaryGeneration.test.ts` and privacy edge cases in `tests/summaryAggregation.test.ts` together to prevent contract drift
+---
+## 2026-02-18 00:00:00 UTC - US-001
+Thread: https://ampcode.com/threads/
+- Implemented cadence enforcement helper and tests
+- Files changed: shared/cadencePolicy.ts, tests/cadencePolicy.test.ts, shared/AGENTS.md
+- **Learnings for future iterations:**
+  - Cadence rules: FREE weekly, PREMIUM daily
+  - Add new cross-cutting helpers under shared/ to reuse across Convex and UI
+  - Run vitest in repo; no server dependency for tests
+---
+## 2026-02-18 08:52:31 UTC - US-002
+Thread: https://ampcode.com/threads/
+- Implemented selected-school window aggregation helper with deterministic dedupe/count behavior
+- Added unit tests for selected-school filtering, inclusive window boundaries, and repeated-run determinism
+- Files changed: shared/summaryAggregation.ts, tests/summaryAggregation.test.ts, shared/AGENTS.md, prd.json
+- **Learnings for future iterations:**
+  - Patterns discovered (e.g., "Cross-cutting summary logic should stay in shared/ for reuse by Convex entrypoints and tests")
+  - Gotchas encountered (e.g., "Window checks should be inclusive to avoid boundary misses")
+  - Useful context (e.g., "Use stable dedupe key schoolId:updateId to keep counts deterministic")
+---
+## 2026-02-18 09:00:14 UTC - US-003
+Thread: https://ampcode.com/threads/
+- Implemented missed-schools computation in shared summary aggregation output with `missedSchoolsCount`
+- Added strict redacted missed-school messaging (`missedSchoolsMessage`) that is count-only and contains no school names
+- Expanded aggregation tests to cover mixed update/no-update counts, all-updated count=0 behavior, and redaction guarantees
+- Files changed: shared/summaryAggregation.ts, tests/summaryAggregation.test.ts, shared/AGENTS.md, prd.json, progress.txt
+- **Learnings for future iterations:**
+  - Patterns discovered (e.g., "Keep privacy-sensitive summary copy centralized in helper functions so redaction is enforced consistently")
+  - Gotchas encountered (e.g., "Do not expose missed-school identifiers; only expose numeric count and generic message")
+- Useful context (e.g., "Existing test fixtures in tests/summaryAggregation.test.ts are the source of truth for window and dedupe behavior")
+---
+## 2026-02-18 09:40:47 UTC - US-004
+Thread: https://ampcode.com/threads/
+- Implemented typed scheduler-ready summary generation contract in shared logic with eligible/ineligible/error outcomes and metadata (`plan`, `cadence`, `windowStart`, `windowEnd`, `generatedAt`, `summaryPayload`)
+- Added Convex summary generation entrypoints (`generateSummary` public action + `generateSummaryInternal` internal action) backed by an internal query that loads user plan, selected schools, and in-window event updates
+- Added tests for typed output, cadence ineligibility, and graceful no-selected-schools/no-updates handling
+- Files changed: shared/summaryGeneration.ts, convex/summaryGeneration.ts, tests/summaryGeneration.test.ts, convex/_generated/api.d.ts, shared/AGENTS.md, prd.json, progress.txt
+- **Learnings for future iterations:**
+  - Patterns discovered (e.g., "Keep Convex scheduler entrypoints thin by delegating aggregation/status shaping to shared helpers")
+  - Gotchas encountered (e.g., "After adding new Convex functions, run `npx convex codegen` so `_generated/api.d.ts` includes new references")
+- Useful context (e.g., "Summary input query currently treats `events.updatedAt` as update timestamp and enforces inclusive window filtering")
+---
+## 2026-02-18 10:02:19 UTC - US-005
+Thread: https://ampcode.com/threads/
+- Added an explicit tier/cadence matrix test at the summary generation entrypoint, plus invalid-plan and invalid-window edge-case assertions for typed ineligible/error outcomes
+- Added a plural missed-schools redaction edge-case test to ensure count-only messaging never includes school names
+- Documented CI evidence for Phase 5.1 summary logic in `docs/tasks/phase-5-1-summary-generation-ci-evidence.md`, including local quality-gate results
+- Files changed: tests/summaryGeneration.test.ts, tests/summaryAggregation.test.ts, docs/tasks/phase-5-1-summary-generation-ci-evidence.md, shared/AGENTS.md, prd.json, progress.txt
+- **Learnings for future iterations:**
+  - Patterns discovered (e.g., "Summary contract changes should be validated at the entrypoint level with a table-driven plan/cadence matrix")
+  - Gotchas encountered (e.g., "Redaction regressions can hide in pluralization branches; test both singular and plural missed-school messages")
+  - Useful context (e.g., "Project quality gate for this repo is `npm run lint`, `npx tsc --noEmit`, and `npm test`")
+---
