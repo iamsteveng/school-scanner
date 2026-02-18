@@ -1,29 +1,22 @@
-Implemented `US-002` on branch `ralph/phase-5-1-summary-generation-logic`.
+Implemented `US-003` on branch `ralph/phase-5-1-summary-generation-logic` and committed it.
 
-### What I changed
-- Added selected-school summary aggregation helper with:
-  - selected-school filtering
-  - inclusive window boundary checks
-  - deterministic dedupe via `schoolId:updateId`
-- Added unit tests for all `US-002` acceptance criteria.
-- Updated reusable guidance in `shared/AGENTS.md`.
-- Marked `US-002` as passing in `prd.json`.
-- Appended a new progress entry to `progress.txt` and updated `## Codebase Patterns`.
+- Commit: `df1c21d`
+- Message: `feat: [US-003] - [Compute missed-schools count with strict redaction]`
 
-### Files
-- `shared/summaryAggregation.ts`
-- `tests/summaryAggregation.test.ts`
-- `shared/AGENTS.md`
-- `prd.json`
-- `progress.txt`
+What changed:
+- Added missed-school outputs to aggregation result in `shared/summaryAggregation.ts`:
+  - `missedSchoolsCount`
+  - `missedSchoolsMessage` (count-only redacted text)
+  - `formatMissedSchoolsMessage()` helper to enforce no school-name leakage
+- Expanded tests in `tests/summaryAggregation.test.ts` for:
+  - mixed update/no-update missed count accuracy
+  - all-updated scenario (`missedSchoolsCount = 0`, message `null`)
+  - redaction guarantee (message does not include school names)
+- Added reusable redaction guidance in `shared/AGENTS.md`
+- Updated `prd.json` (`US-003` set to `passes: true`)
+- Appended progress entry and updated Codebase Patterns in `progress.txt`
 
-### Quality checks
-- `npm run lint` ✅
-- `npx tsc --noEmit` ✅
-- `npm test` ✅ (14 files, 45 tests passed)
-
-### Commit
-- `57d1ac3`
-- Message: `feat: US-002 - Aggregate updates for selected schools within summary window`
-
-Stories still remaining with `passes: false`: `US-003`, `US-004`, `US-005`.
+Quality checks:
+- `npm run lint` passed
+- `npx tsc --noEmit` passed (no `typecheck` script exists in `package.json`)
+- `npm test` passed (47 tests)

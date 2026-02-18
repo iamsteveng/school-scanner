@@ -6,6 +6,7 @@ Started: Wed Feb 18 08:41:46 UTC 2026
 - Keep plan/cadence checks in a single helper to avoid drift
 - Summary aggregation should use inclusive windows and stable dedupe keys (`schoolId:updateId`) for deterministic counts
 - Missed-school messaging should be count-only (redacted) and generated from `missedSchoolsCount`, never school names
+- Scheduler-ready Convex actions should delegate result-shaping logic to shared/ pure helpers to keep job entrypoints thin and testable
 ---
 ## 2026-02-18 00:00:00 UTC - US-001
 Thread: https://ampcode.com/threads/
@@ -35,5 +36,16 @@ Thread: https://ampcode.com/threads/
 - **Learnings for future iterations:**
   - Patterns discovered (e.g., "Keep privacy-sensitive summary copy centralized in helper functions so redaction is enforced consistently")
   - Gotchas encountered (e.g., "Do not expose missed-school identifiers; only expose numeric count and generic message")
-  - Useful context (e.g., "Existing test fixtures in tests/summaryAggregation.test.ts are the source of truth for window and dedupe behavior")
+- Useful context (e.g., "Existing test fixtures in tests/summaryAggregation.test.ts are the source of truth for window and dedupe behavior")
+---
+## 2026-02-18 09:40:47 UTC - US-004
+Thread: https://ampcode.com/threads/
+- Implemented typed scheduler-ready summary generation contract in shared logic with eligible/ineligible/error outcomes and metadata (`plan`, `cadence`, `windowStart`, `windowEnd`, `generatedAt`, `summaryPayload`)
+- Added Convex summary generation entrypoints (`generateSummary` public action + `generateSummaryInternal` internal action) backed by an internal query that loads user plan, selected schools, and in-window event updates
+- Added tests for typed output, cadence ineligibility, and graceful no-selected-schools/no-updates handling
+- Files changed: shared/summaryGeneration.ts, convex/summaryGeneration.ts, tests/summaryGeneration.test.ts, convex/_generated/api.d.ts, shared/AGENTS.md, prd.json, progress.txt
+- **Learnings for future iterations:**
+  - Patterns discovered (e.g., "Keep Convex scheduler entrypoints thin by delegating aggregation/status shaping to shared helpers")
+  - Gotchas encountered (e.g., "After adding new Convex functions, run `npx convex codegen` so `_generated/api.d.ts` includes new references")
+  - Useful context (e.g., "Summary input query currently treats `events.updatedAt` as update timestamp and enforces inclusive window filtering")
 ---

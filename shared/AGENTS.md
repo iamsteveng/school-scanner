@@ -6,3 +6,4 @@
 - Summary aggregation belongs in shared/summaryAggregation.ts with an explicit window contract.
 - For dedupe, use stable keys (`schoolId:updateId`) so repeated runs on the same dataset stay deterministic.
 - Missed-schools output must stay redacted: emit count-only text and never include school names.
+- Scheduler-facing summary generation composition belongs in shared/summaryGeneration.ts so Convex actions/crons and tests share one typed result contract.
