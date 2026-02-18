@@ -8,6 +8,7 @@ Started: Wed Feb 18 08:41:46 UTC 2026
 - Missed-school messaging should be count-only (redacted) and generated from `missedSchoolsCount`, never school names
 - Scheduler-ready Convex actions should delegate result-shaping logic to shared/ pure helpers to keep job entrypoints thin and testable
 - For summary logic changes, keep matrix/outcome coverage in `tests/summaryGeneration.test.ts` and privacy edge cases in `tests/summaryAggregation.test.ts` together to prevent contract drift
+- Delivery jobs should compute UTC cadence windows via a shared helper and send via `convex/whatsapp.ts` shared sender to keep logging behavior consistent
 ---
 ## 2026-02-18 00:00:00 UTC - US-001
 Thread: https://ampcode.com/threads/
@@ -60,4 +61,15 @@ Thread: https://ampcode.com/threads/
   - Patterns discovered (e.g., "Summary contract changes should be validated at the entrypoint level with a table-driven plan/cadence matrix")
   - Gotchas encountered (e.g., "Redaction regressions can hide in pluralization branches; test both singular and plural missed-school messages")
   - Useful context (e.g., "Project quality gate for this repo is `npm run lint`, `npx tsc --noEmit`, and `npm test`")
+---
+## 2026-02-18 15:52:05 UTC - US-001
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Implemented a daily PREMIUM scheduler action that computes a deterministic previous-UTC-day window, fetches verified PREMIUM candidates only, generates daily summaries, and sends WhatsApp delivery messages.
+- Added reusable WhatsApp message send helper for non-verification messages and reused existing Twilio send logging (`whatsapp_message_logs`) for successful deliveries.
+- Added cron wiring and tests for PREMIUM-only candidate filtering, UTC window boundaries, and successful send logging contract.
+- Files changed: convex/jobs.ts, convex/whatsapp.ts, convex/crons.ts, tests/dailyPremiumScheduler.test.ts, tests/whatsappDispatch.test.ts, prd.json, progress.txt
+- **Learnings for future iterations:**
+  - Patterns discovered (e.g., "Delivery jobs should use a deterministic UTC window helper so retries and audits reference the same cadence interval")
+  - Gotchas encountered (e.g., "Use a shared send helper in `convex/whatsapp.ts` so all Twilio sends keep consistent `whatsapp_message_logs` behavior")
+  - Useful context (e.g., "Daily scheduler candidates currently require `plan=PREMIUM` and a populated `verifiedAt` timestamp")
 ---

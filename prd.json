@@ -1,17 +1,16 @@
 {
   "project": "School Scanner",
-  "branchName": "ralph/phase-5-1-summary-generation-logic",
-  "description": "Phase 5.1 Summary Generation Logic - implement backend summary generation with strict tier cadence enforcement and redacted missed-schools counts.",
+  "branchName": "ralph/phase-5-2-whatsapp-delivery-scheduler",
+  "description": "Phase 5.2 WhatsApp Delivery Scheduler - scheduled daily/weekly summary delivery with idempotency, skip rules, and delivery logging.",
   "userStories": [
     {
       "id": "US-001",
-      "title": "Enforce cadence policy by user tier",
-      "description": "As a FREE/PREMIUM user, summary generation should only run for allowed cadence (FREE weekly, PREMIUM daily).",
+      "title": "Daily scheduler for PREMIUM users",
+      "description": "As a PREMIUM user, I should receive daily summary messages when eligible.",
       "acceptanceCriteria": [
-        "FREE + daily request returns ineligible(cadence_mismatch)",
-        "FREE + weekly request proceeds on eligible path",
-        "PREMIUM + weekly request returns ineligible(cadence_mismatch)",
-        "PREMIUM + daily request proceeds on eligible path",
+        "Daily scheduler runs and processes PREMIUM users only",
+        "FREE users are not sent via daily scheduler",
+        "Successful sends are logged",
         "Typecheck passes"
       ],
       "priority": 1,
@@ -20,59 +19,59 @@
     },
     {
       "id": "US-002",
-      "title": "Aggregate updates for selected schools within summary window",
-      "description": "As a user, generated summary should only include updates from my selected schools in the specified time window.",
+      "title": "Weekly scheduler for FREE users",
+      "description": "As a FREE user, I should receive weekly summary messages when eligible.",
       "acceptanceCriteria": [
-        "Aggregation only considers user-selected schools",
-        "Window boundaries are respected",
-        "Repeated runs on same fixture data produce deterministic counts",
+        "Weekly scheduler runs and processes FREE users only",
+        "PREMIUM users are not sent via weekly scheduler",
+        "Successful sends are logged",
         "Typecheck passes"
       ],
       "priority": 2,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-003",
-      "title": "Compute missed-schools count with strict redaction",
-      "description": "As a user, I should see how many selected schools had no updates, without exposing school names.",
+      "title": "Skip inactive/ineligible users safely",
+      "description": "As system ops, scheduler should avoid unnecessary sends while continuing healthy processing.",
       "acceptanceCriteria": [
-        "missedSchoolsCount is accurate for mixed update/no-update scenarios",
-        "No school names are included in missed-schools messaging/payload",
-        "All-updated scenario returns missedSchoolsCount = 0",
+        "Inactive or non-deliverable users are skipped",
+        "Skip reason is logged",
+        "Pipeline continues for other users when one user is skipped/failed",
         "Typecheck passes"
       ],
       "priority": 3,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-004",
-      "title": "Expose scheduler-ready summary generation entrypoint",
-      "description": "As Phase 5.2 scheduler, I can call one backend function and receive typed generation output with metadata.",
+      "title": "Idempotent delivery behavior",
+      "description": "As users, we should not receive duplicate messages for the same cadence window.",
       "acceptanceCriteria": [
-        "Entrypoint returns typed status for eligible/ineligible/error outcomes",
-        "Output includes plan, cadence, windowStart/windowEnd, generatedAt, and summary payload",
-        "Handles no-selected-schools and no-updates edge cases gracefully",
+        "Re-running the same cadence window does not duplicate WhatsApp messages",
+        "Idempotency keying (user + cadence + window) is implemented and tested",
+        "Retry behavior preserves no-duplicate guarantee",
         "Typecheck passes"
       ],
       "priority": 4,
-      "passes": true,
+      "passes": false,
       "notes": ""
     },
     {
       "id": "US-005",
-      "title": "Add test matrix and CI evidence for summary logic",
-      "description": "As engineering, we need confidence that cadence rules, aggregation, and redaction remain correct.",
+      "title": "Test matrix and CI evidence",
+      "description": "As engineering, we need confidence and traceability for scheduler and delivery behavior.",
       "acceptanceCriteria": [
-        "Unit tests cover tier-cadence matrix",
-        "Unit tests cover aggregation + missedSchoolsCount logic",
-        "Unit tests cover redaction guarantees and edge cases",
+        "Tests cover daily/weekly selection logic",
+        "Tests cover skip behavior and idempotency",
+        "Tests cover delivery logging outcomes",
         "Lint, typecheck, and tests pass",
-        "CI evidence is documented in PR"
+        "CI evidence is documented in task docs"
       ],
       "priority": 5,
-      "passes": true,
+      "passes": false,
       "notes": ""
     }
   ]
