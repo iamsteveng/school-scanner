@@ -1,0 +1,16 @@
+# Ralph Progress Log
+Started: Wed Feb 18 08:41:46 UTC 2026
+---
+## Codebase Patterns
+- Centralize policy helpers in shared/ (e.g., cadencePolicy)
+- Keep plan/cadence checks in a single helper to avoid drift
+---
+## 2026-02-18 00:00:00 UTC - US-001
+Thread: https://ampcode.com/threads/
+- Implemented cadence enforcement helper and tests
+- Files changed: shared/cadencePolicy.ts, tests/cadencePolicy.test.ts, shared/AGENTS.md
+- **Learnings for future iterations:**
+  - Cadence rules: FREE weekly, PREMIUM daily
+  - Add new cross-cutting helpers under shared/ to reuse across Convex and UI
+  - Run vitest in repo; no server dependency for tests
+---

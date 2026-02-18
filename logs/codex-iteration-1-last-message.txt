@@ -1,0 +1,28 @@
+Implemented US-001 cadence enforcement and updated PRD and progress.
+
+**What I Did**
+- Checked out branch ralph/phase-5-1-summary-generation-logic from main.
+- Implemented centralized cadence policy helper enforcing FREE=weekly, PREMIUM=daily.
+- Added unit tests covering all acceptance cases.
+- Appended progress log with Codebase Patterns section.
+- Marked US-001 as passing in prd.json.
+- Commit created with required message.
+
+**Changes**
+- Policy helper: shared/cadencePolicy.ts:1
+- Unit tests: tests/cadencePolicy.test.ts:1
+- Shared guidance: shared/AGENTS.md:1
+- PRD updated: prd.json:7 (US-001 passes set to true)
+- Progress updated: progress.txt:4 (appended Codebase Patterns and entry)
+
+**Quality Checks**
+- Typecheck: tsc --noEmit passed.
+- Lint: npm run lint passed.
+- Tests: npm test passed (13 files, 42 tests).
+
+**Notes**
+- This story is backend-only; no UI to verify in browser.
+- I added a “Codebase Patterns” note about centralizing policy helpers under shared/.
+
+**Next Steps**
+- Highest remaining false story is US-002 (aggregation within window). I can pick that up next.
