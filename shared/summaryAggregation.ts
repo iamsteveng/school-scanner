@@ -14,6 +14,8 @@ export type AggregateSelectedSchoolUpdatesArgs = {
 export type AggregateSelectedSchoolUpdatesResult = {
   selectedSchoolCount: number;
   updatedSchoolCount: number;
+  missedSchoolsCount: number;
+  missedSchoolsMessage: string | null;
   totalRelevantUpdates: number;
   updateCountsBySchool: Record<string, number>;
 };
@@ -60,11 +62,20 @@ export function aggregateSelectedSchoolUpdates(
   }
 
   const updatedSchoolCount = Object.values(updateCountsBySchool).filter((c) => c > 0).length;
+  const missedSchoolsCount = normalizedSelectedSchoolIds.length - updatedSchoolCount;
 
   return {
     selectedSchoolCount: normalizedSelectedSchoolIds.length,
     updatedSchoolCount,
+    missedSchoolsCount,
+    missedSchoolsMessage: formatMissedSchoolsMessage(missedSchoolsCount),
     totalRelevantUpdates: relevantUpdates.length,
     updateCountsBySchool,
   };
+}
+
+export function formatMissedSchoolsMessage(missedSchoolsCount: number): string | null {
+  if (missedSchoolsCount <= 0) return null;
+  if (missedSchoolsCount === 1) return '1 selected school had no updates in this window.';
+  return `${missedSchoolsCount} selected schools had no updates in this window.`;
 }

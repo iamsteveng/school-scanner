@@ -20,6 +20,8 @@ describe('summary aggregation', () => {
 
     expect(result.selectedSchoolCount).toBe(2)
     expect(result.updatedSchoolCount).toBe(2)
+    expect(result.missedSchoolsCount).toBe(0)
+    expect(result.missedSchoolsMessage).toBeNull()
     expect(result.totalRelevantUpdates).toBe(3)
     expect(result.updateCountsBySchool).toEqual({
       s1: 2,
@@ -36,6 +38,8 @@ describe('summary aggregation', () => {
     })
 
     expect(result.totalRelevantUpdates).toBe(2)
+    expect(result.missedSchoolsCount).toBe(0)
+    expect(result.missedSchoolsMessage).toBeNull()
     expect(result.updateCountsBySchool).toEqual({
       s1: 1,
       s2: 1,
@@ -57,5 +61,35 @@ describe('summary aggregation', () => {
     })
 
     expect(second).toEqual(first)
+  })
+
+  it('computes missedSchoolsCount for mixed update/no-update scenarios', () => {
+    const result = aggregateSelectedSchoolUpdates({
+      selectedSchoolIds: ['s1', 's2', 's4'],
+      updates: fixtureUpdates,
+      windowStart: 0,
+      windowEnd: 1_000,
+    })
+
+    expect(result.selectedSchoolCount).toBe(3)
+    expect(result.updatedSchoolCount).toBe(2)
+    expect(result.missedSchoolsCount).toBe(1)
+    expect(result.missedSchoolsMessage).toBe('1 selected school had no updates in this window.')
+  })
+
+  it('keeps missed-school messaging redacted (count-only, no school names)', () => {
+    const result = aggregateSelectedSchoolUpdates({
+      selectedSchoolIds: ['Alpha Primary School', 'Beta Primary School'],
+      updates: [
+        { schoolId: 'Alpha Primary School', updateId: 'alpha-1', at: 101 },
+      ],
+      windowStart: 0,
+      windowEnd: 1_000,
+    })
+
+    expect(result.missedSchoolsCount).toBe(1)
+    expect(result.missedSchoolsMessage).toBe('1 selected school had no updates in this window.')
+    expect(result.missedSchoolsMessage).not.toContain('Alpha Primary School')
+    expect(result.missedSchoolsMessage).not.toContain('Beta Primary School')
   })
 })

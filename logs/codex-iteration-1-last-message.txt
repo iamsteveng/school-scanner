@@ -1,28 +1,29 @@
-Implemented US-001 cadence enforcement and updated PRD and progress.
+Implemented `US-002` on branch `ralph/phase-5-1-summary-generation-logic`.
 
-**What I Did**
-- Checked out branch ralph/phase-5-1-summary-generation-logic from main.
-- Implemented centralized cadence policy helper enforcing FREE=weekly, PREMIUM=daily.
-- Added unit tests covering all acceptance cases.
-- Appended progress log with Codebase Patterns section.
-- Marked US-001 as passing in prd.json.
-- Commit created with required message.
+### What I changed
+- Added selected-school summary aggregation helper with:
+  - selected-school filtering
+  - inclusive window boundary checks
+  - deterministic dedupe via `schoolId:updateId`
+- Added unit tests for all `US-002` acceptance criteria.
+- Updated reusable guidance in `shared/AGENTS.md`.
+- Marked `US-002` as passing in `prd.json`.
+- Appended a new progress entry to `progress.txt` and updated `## Codebase Patterns`.
 
-**Changes**
-- Policy helper: shared/cadencePolicy.ts:1
-- Unit tests: tests/cadencePolicy.test.ts:1
-- Shared guidance: shared/AGENTS.md:1
-- PRD updated: prd.json:7 (US-001 passes set to true)
-- Progress updated: progress.txt:4 (appended Codebase Patterns and entry)
+### Files
+- `shared/summaryAggregation.ts`
+- `tests/summaryAggregation.test.ts`
+- `shared/AGENTS.md`
+- `prd.json`
+- `progress.txt`
 
-**Quality Checks**
-- Typecheck: tsc --noEmit passed.
-- Lint: npm run lint passed.
-- Tests: npm test passed (13 files, 42 tests).
+### Quality checks
+- `npm run lint` ✅
+- `npx tsc --noEmit` ✅
+- `npm test` ✅ (14 files, 45 tests passed)
 
-**Notes**
-- This story is backend-only; no UI to verify in browser.
-- I added a “Codebase Patterns” note about centralizing policy helpers under shared/.
+### Commit
+- `57d1ac3`
+- Message: `feat: US-002 - Aggregate updates for selected schools within summary window`
 
-**Next Steps**
-- Highest remaining false story is US-002 (aggregation within window). I can pick that up next.
+Stories still remaining with `passes: false`: `US-003`, `US-004`, `US-005`.

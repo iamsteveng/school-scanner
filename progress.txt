@@ -5,6 +5,7 @@ Started: Wed Feb 18 08:41:46 UTC 2026
 - Centralize policy helpers in shared/ (e.g., cadencePolicy)
 - Keep plan/cadence checks in a single helper to avoid drift
 - Summary aggregation should use inclusive windows and stable dedupe keys (`schoolId:updateId`) for deterministic counts
+- Missed-school messaging should be count-only (redacted) and generated from `missedSchoolsCount`, never school names
 ---
 ## 2026-02-18 00:00:00 UTC - US-001
 Thread: https://ampcode.com/threads/
@@ -24,4 +25,15 @@ Thread: https://ampcode.com/threads/
   - Patterns discovered (e.g., "Cross-cutting summary logic should stay in shared/ for reuse by Convex entrypoints and tests")
   - Gotchas encountered (e.g., "Window checks should be inclusive to avoid boundary misses")
   - Useful context (e.g., "Use stable dedupe key schoolId:updateId to keep counts deterministic")
+---
+## 2026-02-18 09:00:14 UTC - US-003
+Thread: https://ampcode.com/threads/
+- Implemented missed-schools computation in shared summary aggregation output with `missedSchoolsCount`
+- Added strict redacted missed-school messaging (`missedSchoolsMessage`) that is count-only and contains no school names
+- Expanded aggregation tests to cover mixed update/no-update counts, all-updated count=0 behavior, and redaction guarantees
+- Files changed: shared/summaryAggregation.ts, tests/summaryAggregation.test.ts, shared/AGENTS.md, prd.json, progress.txt
+- **Learnings for future iterations:**
+  - Patterns discovered (e.g., "Keep privacy-sensitive summary copy centralized in helper functions so redaction is enforced consistently")
+  - Gotchas encountered (e.g., "Do not expose missed-school identifiers; only expose numeric count and generic message")
+  - Useful context (e.g., "Existing test fixtures in tests/summaryAggregation.test.ts are the source of truth for window and dedupe behavior")
 ---
