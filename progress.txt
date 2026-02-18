@@ -10,6 +10,7 @@ Started: Wed Feb 18 08:41:46 UTC 2026
 - For summary logic changes, keep matrix/outcome coverage in `tests/summaryGeneration.test.ts` and privacy edge cases in `tests/summaryAggregation.test.ts` together to prevent contract drift
 - Delivery jobs should compute UTC cadence windows via a shared helper and send via `convex/whatsapp.ts` shared sender to keep logging behavior consistent
 - Keep cadence-specific scheduler candidate filters explicit (`isDailyPremiumCandidate`, `isWeeklyFreeCandidate`) so plan/tier targeting stays obvious and independently testable
+- Keep scheduler skip logging inside shared candidate-processing flow so inactive/non-deliverable reasons are observable instead of being silently filtered upstream
 ---
 ## 2026-02-18 00:00:00 UTC - US-001
 Thread: https://ampcode.com/threads/
@@ -84,4 +85,15 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - Patterns discovered (e.g., "Mirror cadence-specific scheduler jobs with dedicated candidate filters + deterministic UTC window helpers to keep cadence behavior explicit and testable")
   - Gotchas encountered (e.g., "After adding new Convex job exports used by crons, run `npx convex codegen` so `_generated/api.d.ts` stays in sync")
   - Useful context (e.g., "Weekly scheduler currently uses the previous full 7 UTC days ending at 23:59:59.999 of the prior day")
+---
+## 2026-02-18 23:57:56 UTC - US-003
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Implemented explicit inactive/non-deliverable skip handling in scheduler candidate processing with logged reasons (`inactive_unverified`, `invalid_phone`) while preserving per-user failure isolation.
+- Updated daily/weekly candidate listing to include tier users and let processing flow enforce deliverability/verification checks so skip outcomes are observable.
+- Added unit tests for skip reason logging, non-deliverable/inactive skip paths, and continued processing after a per-user failure.
+- Files changed: convex/jobs.ts, tests/schedulerDeliveryProcessing.test.ts, prd.json, progress.txt
+- **Learnings for future iterations:**
+  - Patterns discovered (e.g., "Filter by plan at candidate query time, then apply verification/deliverability checks in the shared processing loop to capture skip logs consistently")
+  - Gotchas encountered (e.g., "If unverified users are filtered out too early, you lose scheduler observability for inactive-user skips")
+  - Useful context (e.g., "Use `processSummaryDeliveryCandidates` tests to assert skip/failure isolation without invoking Convex runtime")
 ---

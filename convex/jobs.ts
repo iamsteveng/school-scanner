@@ -22,6 +22,30 @@ export type WeeklyFreeCandidate = {
   verifiedAt?: number;
 };
 
+type SchedulerCadence = "daily" | "weekly";
+
+type SchedulerSummaryResult =
+  | {
+      status: "eligible";
+      updatedSchoolCount: number;
+      totalRelevantUpdates: number;
+      missedSchoolsCount: number;
+    }
+  | {
+      status: "ineligible";
+      reason?: string;
+    }
+  | {
+      status: "error";
+      reason?: string;
+    };
+
+type SchedulerCandidate = {
+  userId: Id<"users">;
+  phone: string;
+  verifiedAt?: number;
+};
+
 export function isDailyPremiumCandidate(user: {
   plan?: "FREE" | "PREMIUM";
   verifiedAt?: number;
@@ -34,6 +58,22 @@ export function isWeeklyFreeCandidate(user: {
   verifiedAt?: number;
 }): boolean {
   return user.plan === "FREE" && typeof user.verifiedAt === "number";
+}
+
+export function isDailyPremiumTierUser(user: {
+  plan?: "FREE" | "PREMIUM";
+}): boolean {
+  return user.plan === "PREMIUM";
+}
+
+export function isWeeklyFreeTierUser(user: {
+  plan?: "FREE" | "PREMIUM";
+}): boolean {
+  return user.plan === "FREE";
+}
+
+export function isDeliverablePhone(phone: string): boolean {
+  return /^\+\d{8,15}$/.test(phone.trim());
 }
 
 export function getPreviousUtcDayWindow(nowMs: number): {
@@ -64,6 +104,117 @@ export function getPreviousUtcWeekWindow(nowMs: number): {
   const windowEnd = startOfTodayUtc - 1;
   const windowStart = windowEnd - (7 * 24 * 60 * 60 * 1000 - 1);
   return { windowStart, windowEnd };
+}
+
+export function buildSummaryDeliveryToken(args: {
+  cadence: SchedulerCadence;
+  userId: string;
+  windowStart: number;
+  windowEnd: number;
+}): string {
+  return `summary_${args.cadence}_${args.userId}_${args.windowStart}_${args.windowEnd}`;
+}
+
+export function getSchedulerSkipReason(
+  summary: SchedulerSummaryResult,
+): string {
+  if (summary.status === "ineligible") {
+    return summary.reason ?? "ineligible";
+  }
+  if (summary.status === "error") {
+    return summary.reason ?? "summary_error";
+  }
+  return "not_skipped";
+}
+
+export async function processSummaryDeliveryCandidates(args: {
+  cadence: SchedulerCadence;
+  windowStart: number;
+  windowEnd: number;
+  candidates: SchedulerCandidate[];
+  generateSummary: (candidate: SchedulerCandidate) => Promise<SchedulerSummaryResult>;
+  sendMessage: (options: {
+    candidate: SchedulerCandidate;
+    token: string;
+    summary: Extract<SchedulerSummaryResult, { status: "eligible" }>;
+  }) => Promise<void>;
+  logSkip: (options: {
+    candidate: SchedulerCandidate;
+    token: string;
+    reason: string;
+  }) => Promise<void>;
+  logFailure: (options: {
+    candidate: SchedulerCandidate;
+    token: string;
+    reason: string;
+  }) => Promise<void>;
+}): Promise<{ attempted: number; sent: number; skipped: number; failed: number }> {
+  let sent = 0;
+  let skipped = 0;
+  let failed = 0;
+
+  for (const candidate of args.candidates) {
+    const token = buildSummaryDeliveryToken({
+      cadence: args.cadence,
+      userId: String(candidate.userId),
+      windowStart: args.windowStart,
+      windowEnd: args.windowEnd,
+    });
+
+    if (typeof candidate.verifiedAt !== "number") {
+      skipped += 1;
+      await args.logSkip({
+        candidate,
+        token,
+        reason: "inactive_unverified",
+      });
+      continue;
+    }
+
+    if (!isDeliverablePhone(candidate.phone)) {
+      skipped += 1;
+      await args.logSkip({
+        candidate,
+        token,
+        reason: "invalid_phone",
+      });
+      continue;
+    }
+
+    try {
+      const summary = await args.generateSummary(candidate);
+      if (summary.status !== "eligible") {
+        skipped += 1;
+        await args.logSkip({
+          candidate,
+          token,
+          reason: getSchedulerSkipReason(summary),
+        });
+        continue;
+      }
+
+      await args.sendMessage({
+        candidate,
+        token,
+        summary,
+      });
+      sent += 1;
+    } catch (error) {
+      failed += 1;
+      await args.logFailure({
+        candidate,
+        token,
+        reason: error instanceof Error ? error.message : "unknown_error",
+      });
+    }
+  }
+
+  return {
+    attempted: args.candidates.length,
+    sent,
+    skipped,
+    failed,
+  };
 }
 
 function formatDailySummaryMessage(args: {
@@ -109,7 +260,7 @@ export const listDailyPremiumCandidates = internalQuery({
     const candidates: DailyPremiumCandidate[] = [];
 
     for (const user of users) {
-      if (!isDailyPremiumCandidate(user)) {
+      if (!isDailyPremiumTierUser(user)) {
         continue;
       }
       candidates.push({
@@ -136,7 +287,7 @@ export const listWeeklyFreeCandidates = internalQuery({
     const candidates: WeeklyFreeCandidate[] = [];
 
     for (const user of users) {
-      if (!isWeeklyFreeCandidate(user)) {
+      if (!isWeeklyFreeTierUser(user)) {
         continue;
       }
       candidates.push({
@@ -254,27 +405,19 @@ export const runDailyPremiumSummaryDelivery: ReturnType<typeof internalAction> =
         { limit: args.limitUsers },
       );
 
-      let sent = 0;
-      let skipped = 0;
-      let failed = 0;
-      for (const candidate of candidates) {
-        try {
-          const summary = await ctx.runAction(
-            internal.summaryGeneration.generateSummaryInternal,
-            {
-              userId: candidate.userId,
-              cadence: "daily",
-              windowStart,
-              windowEnd,
-            },
-          );
-
-          if (summary.status !== "eligible") {
-            skipped += 1;
-            continue;
-          }
-
-          const token = `summary_daily_${candidate.userId}_${windowStart}_${windowEnd}`;
+      const batch = await processSummaryDeliveryCandidates({
+        cadence: "daily",
+        windowStart,
+        windowEnd,
+        candidates,
+        generateSummary: async (candidate) =>
+          await ctx.runAction(internal.summaryGeneration.generateSummaryInternal, {
+            userId: candidate.userId,
+            cadence: "daily",
+            windowStart,
+            windowEnd,
+          }),
+        sendMessage: async ({ candidate, token, summary }) => {
           await sendWhatsAppMessage({
             ctx,
             phone: candidate.phone,
@@ -287,24 +430,39 @@ export const runDailyPremiumSummaryDelivery: ReturnType<typeof internalAction> =
               missedSchoolsCount: summary.missedSchoolsCount,
             }),
           });
-          sent += 1;
-        } catch (error) {
-          failed += 1;
+        },
+        logSkip: async ({ candidate, token, reason }) => {
+          await ctx.runMutation(internal.whatsappLogs.logWhatsAppSend, {
+            phone: candidate.phone,
+            token,
+            status: "skipped",
+            provider: "scheduler",
+            error: reason,
+          });
+        },
+        logFailure: async ({ candidate, token, reason }) => {
           console.error("daily premium summary send failed", {
             userId: candidate.userId,
-            error: error instanceof Error ? error.message : "unknown_error",
+            error: reason,
           });
-        }
-      }
+          await ctx.runMutation(internal.whatsappLogs.logWhatsAppSend, {
+            phone: candidate.phone,
+            token,
+            status: "failed",
+            provider: "scheduler",
+            error: reason,
+          });
+        },
+      });
 
       return {
         cadence: "daily" as const,
         windowStart,
         windowEnd,
-        attempted: candidates.length,
-        sent,
-        skipped,
-        failed,
+        attempted: batch.attempted,
+        sent: batch.sent,
+        skipped: batch.skipped,
+        failed: batch.failed,
       };
     },
   });
@@ -327,27 +485,19 @@ export const runWeeklyFreeSummaryDelivery: ReturnType<typeof internalAction> =
         { limit: args.limitUsers },
       );
 
-      let sent = 0;
-      let skipped = 0;
-      let failed = 0;
-      for (const candidate of candidates) {
-        try {
-          const summary = await ctx.runAction(
-            internal.summaryGeneration.generateSummaryInternal,
-            {
-              userId: candidate.userId,
-              cadence: "weekly",
-              windowStart,
-              windowEnd,
-            },
-          );
-
-          if (summary.status !== "eligible") {
-            skipped += 1;
-            continue;
-          }
-
-          const token = `summary_weekly_${candidate.userId}_${windowStart}_${windowEnd}`;
+      const batch = await processSummaryDeliveryCandidates({
+        cadence: "weekly",
+        windowStart,
+        windowEnd,
+        candidates,
+        generateSummary: async (candidate) =>
+          await ctx.runAction(internal.summaryGeneration.generateSummaryInternal, {
+            userId: candidate.userId,
+            cadence: "weekly",
+            windowStart,
+            windowEnd,
+          }),
+        sendMessage: async ({ candidate, token, summary }) => {
           await sendWhatsAppMessage({
             ctx,
             phone: candidate.phone,
@@ -360,24 +510,39 @@ export const runWeeklyFreeSummaryDelivery: ReturnType<typeof internalAction> =
               missedSchoolsCount: summary.missedSchoolsCount,
             }),
           });
-          sent += 1;
-        } catch (error) {
-          failed += 1;
+        },
+        logSkip: async ({ candidate, token, reason }) => {
+          await ctx.runMutation(internal.whatsappLogs.logWhatsAppSend, {
+            phone: candidate.phone,
+            token,
+            status: "skipped",
+            provider: "scheduler",
+            error: reason,
+          });
+        },
+        logFailure: async ({ candidate, token, reason }) => {
           console.error("weekly free summary send failed", {
             userId: candidate.userId,
-            error: error instanceof Error ? error.message : "unknown_error",
+            error: reason,
           });
-        }
-      }
+          await ctx.runMutation(internal.whatsappLogs.logWhatsAppSend, {
+            phone: candidate.phone,
+            token,
+            status: "failed",
+            provider: "scheduler",
+            error: reason,
+          });
+        },
+      });
 
       return {
         cadence: "weekly" as const,
         windowStart,
         windowEnd,
-        attempted: candidates.length,
-        sent,
-        skipped,
-        failed,
+        attempted: batch.attempted,
+        sent: batch.sent,
+        skipped: batch.skipped,
+        failed: batch.failed,
       };
     },
   });
