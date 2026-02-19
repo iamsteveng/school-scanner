@@ -11,6 +11,7 @@ Started: Wed Feb 18 08:41:46 UTC 2026
 - Delivery jobs should compute UTC cadence windows via a shared helper and send via `convex/whatsapp.ts` shared sender to keep logging behavior consistent
 - Keep cadence-specific scheduler candidate filters explicit (`isDailyPremiumCandidate`, `isWeeklyFreeCandidate`) so plan/tier targeting stays obvious and independently testable
 - Keep scheduler skip logging inside shared candidate-processing flow so inactive/non-deliverable reasons are observable instead of being silently filtered upstream
+- Enforce delivery idempotency by checking `whatsapp_message_logs` for an existing `status=sent` record keyed by deterministic token (`summary_${cadence}_${userId}_${windowStart}_${windowEnd}`) before attempting a send
 ---
 ## 2026-02-18 00:00:00 UTC - US-001
 Thread: https://ampcode.com/threads/
@@ -95,5 +96,16 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
 - **Learnings for future iterations:**
   - Patterns discovered (e.g., "Filter by plan at candidate query time, then apply verification/deliverability checks in the shared processing loop to capture skip logs consistently")
   - Gotchas encountered (e.g., "If unverified users are filtered out too early, you lose scheduler observability for inactive-user skips")
-  - Useful context (e.g., "Use `processSummaryDeliveryCandidates` tests to assert skip/failure isolation without invoking Convex runtime")
+- Useful context (e.g., "Use `processSummaryDeliveryCandidates` tests to assert skip/failure isolation without invoking Convex runtime")
+---
+## 2026-02-19 00:30:54 UTC - US-004
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Implemented scheduler delivery idempotency using deterministic per-user cadence-window token checks against prior successful WhatsApp logs before send attempts.
+- Added internal query support for token-based successful-send lookup and schema index for efficient token queries.
+- Added tests covering duplicate-window skip behavior and retry semantics (failed attempt can retry; once successful, subsequent reruns are skipped).
+- Files changed: convex/jobs.ts, convex/whatsappLogs.ts, convex/schema.ts, convex/_generated/api.d.ts, convex/_generated/dataModel.d.ts, tests/schedulerDeliveryProcessing.test.ts, prd.json, progress.txt
+- **Learnings for future iterations:**
+  - Patterns discovered (e.g., "Use deterministic summary delivery tokens as idempotency keys and check for prior `sent` logs before generating/sending content")
+  - Gotchas encountered (e.g., "Token generation alone is not idempotency; pre-send `sent` existence checks are required to avoid duplicate deliveries on rerun")
+  - Useful context (e.g., "Retry behavior should only block after a successful send log exists; failed runs must remain retryable")
 ---

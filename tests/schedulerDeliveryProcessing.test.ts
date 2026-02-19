@@ -23,6 +23,7 @@ describe("scheduler delivery processing", () => {
     const sendMessage = vi.fn();
     const logSkip = vi.fn().mockResolvedValue(undefined);
     const logFailure = vi.fn().mockResolvedValue(undefined);
+    const wasAlreadySent = vi.fn().mockResolvedValue(false);
 
     const result = await processSummaryDeliveryCandidates({
       cadence: "daily",
@@ -40,6 +41,7 @@ describe("scheduler delivery processing", () => {
         }),
       ],
       generateSummary,
+      wasAlreadySent,
       sendMessage,
       logSkip,
       logFailure,
@@ -54,6 +56,7 @@ describe("scheduler delivery processing", () => {
     expect(generateSummary).not.toHaveBeenCalled();
     expect(sendMessage).not.toHaveBeenCalled();
     expect(logSkip).toHaveBeenCalledTimes(2);
+    expect(wasAlreadySent).toHaveBeenCalledTimes(2);
     expect(logSkip.mock.calls[0]?.[0]).toMatchObject({
       reason: "inactive_unverified",
     });
@@ -76,6 +79,7 @@ describe("scheduler delivery processing", () => {
     const sendMessage = vi.fn().mockResolvedValue(undefined);
     const logSkip = vi.fn().mockResolvedValue(undefined);
     const logFailure = vi.fn().mockResolvedValue(undefined);
+    const wasAlreadySent = vi.fn().mockResolvedValue(false);
 
     const result = await processSummaryDeliveryCandidates({
       cadence: "weekly",
@@ -99,6 +103,7 @@ describe("scheduler delivery processing", () => {
         }),
       ],
       generateSummary,
+      wasAlreadySent,
       sendMessage,
       logSkip,
       logFailure,
@@ -119,6 +124,118 @@ describe("scheduler delivery processing", () => {
       reason: "no_updates",
     });
     expect(sendMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it("skips duplicate sends for the same cadence window token", async () => {
+    const generateSummary = vi.fn();
+    const sendMessage = vi.fn();
+    const logSkip = vi.fn().mockResolvedValue(undefined);
+    const logFailure = vi.fn().mockResolvedValue(undefined);
+    const wasAlreadySent = vi.fn().mockResolvedValue(true);
+
+    const result = await processSummaryDeliveryCandidates({
+      cadence: "daily",
+      windowStart: 1000,
+      windowEnd: 2000,
+      candidates: [
+        candidate({
+          userId: "u1",
+          phone: "+85211111111",
+          verifiedAt: 111,
+        }),
+      ],
+      generateSummary,
+      wasAlreadySent,
+      sendMessage,
+      logSkip,
+      logFailure,
+    });
+
+    expect(result).toEqual({
+      attempted: 1,
+      sent: 0,
+      skipped: 1,
+      failed: 0,
+    });
+    expect(generateSummary).not.toHaveBeenCalled();
+    expect(sendMessage).not.toHaveBeenCalled();
+    expect(logFailure).not.toHaveBeenCalled();
+    expect(logSkip).toHaveBeenCalledTimes(1);
+    expect(logSkip.mock.calls[0]?.[0]).toMatchObject({
+      reason: "duplicate_window",
+    });
+  });
+
+  it("allows retry after a failed send and blocks duplicates after success", async () => {
+    const generateSummary = vi.fn().mockResolvedValue({
+      status: "eligible",
+      updatedSchoolCount: 1,
+      totalRelevantUpdates: 1,
+      missedSchoolsCount: 0,
+    });
+    const logSkip = vi.fn().mockResolvedValue(undefined);
+    const logFailure = vi.fn().mockResolvedValue(undefined);
+    const sentTokens = new Set<string>();
+
+    const sendMessage = vi
+      .fn()
+      .mockImplementationOnce(async () => {
+        throw new Error("temporary provider failure");
+      })
+      .mockImplementationOnce(async ({ token }: { token: string }) => {
+        sentTokens.add(token);
+      });
+
+    const wasAlreadySent = vi.fn(
+      async ({ token }: { token: string }) => sentTokens.has(token),
+    );
+
+    const runArgs = {
+      cadence: "weekly" as const,
+      windowStart: 1000,
+      windowEnd: 2000,
+      candidates: [
+        candidate({
+          userId: "u1",
+          phone: "+85211111111",
+          verifiedAt: 111,
+        }),
+      ],
+      generateSummary,
+      wasAlreadySent,
+      sendMessage,
+      logSkip,
+      logFailure,
+    };
+
+    const firstRun = await processSummaryDeliveryCandidates(runArgs);
+    const secondRun = await processSummaryDeliveryCandidates(runArgs);
+    const thirdRun = await processSummaryDeliveryCandidates(runArgs);
+
+    expect(firstRun).toEqual({
+      attempted: 1,
+      sent: 0,
+      skipped: 0,
+      failed: 1,
+    });
+    expect(secondRun).toEqual({
+      attempted: 1,
+      sent: 1,
+      skipped: 0,
+      failed: 0,
+    });
+    expect(thirdRun).toEqual({
+      attempted: 1,
+      sent: 0,
+      skipped: 1,
+      failed: 0,
+    });
+    expect(sendMessage).toHaveBeenCalledTimes(2);
+    expect(logFailure).toHaveBeenCalledTimes(1);
+    expect(logSkip).toHaveBeenCalledTimes(1);
+    expect(logSkip.mock.calls[0]?.[0]).toMatchObject({
+      reason: "duplicate_window",
+    });
   });
 
   it("validates phone format with E.164-like rules", () => {

@@ -133,6 +133,10 @@ export async function processSummaryDeliveryCandidates(args: {
   windowEnd: number;
   candidates: SchedulerCandidate[];
   generateSummary: (candidate: SchedulerCandidate) => Promise<SchedulerSummaryResult>;
+  wasAlreadySent: (options: {
+    candidate: SchedulerCandidate;
+    token: string;
+  }) => Promise<boolean>;
   sendMessage: (options: {
     candidate: SchedulerCandidate;
     token: string;
@@ -160,6 +164,17 @@ export async function processSummaryDeliveryCandidates(args: {
       windowStart: args.windowStart,
       windowEnd: args.windowEnd,
     });
+
+    const alreadySent = await args.wasAlreadySent({ candidate, token });
+    if (alreadySent) {
+      skipped += 1;
+      await args.logSkip({
+        candidate,
+        token,
+        reason: "duplicate_window",
+      });
+      continue;
+    }
 
     if (typeof candidate.verifiedAt !== "number") {
       skipped += 1;
@@ -410,12 +425,16 @@ export const runDailyPremiumSummaryDelivery: ReturnType<typeof internalAction> =
         windowStart,
         windowEnd,
         candidates,
-        generateSummary: async (candidate) =>
+      generateSummary: async (candidate) =>
           await ctx.runAction(internal.summaryGeneration.generateSummaryInternal, {
             userId: candidate.userId,
             cadence: "daily",
             windowStart,
             windowEnd,
+          }),
+        wasAlreadySent: async ({ token }) =>
+          await ctx.runQuery(internal.whatsappLogs.hasSuccessfulSendForToken, {
+            token,
           }),
         sendMessage: async ({ candidate, token, summary }) => {
           await sendWhatsAppMessage({
@@ -496,6 +515,10 @@ export const runWeeklyFreeSummaryDelivery: ReturnType<typeof internalAction> =
             cadence: "weekly",
             windowStart,
             windowEnd,
+          }),
+        wasAlreadySent: async ({ token }) =>
+          await ctx.runQuery(internal.whatsappLogs.hasSuccessfulSendForToken, {
+            token,
           }),
         sendMessage: async ({ candidate, token, summary }) => {
           await sendWhatsAppMessage({
