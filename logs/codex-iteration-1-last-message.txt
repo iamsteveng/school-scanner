@@ -1,0 +1,26 @@
+Implemented `US-004` on branch `ralph/phase-5-2-whatsapp-delivery-scheduler` and committed as:
+
+`0a50de7 feat: US-004 - Idempotent delivery behavior`
+
+What changed:
+- Added scheduler idempotency pre-check in `convex/jobs.ts`:
+  - Before send, checks whether the cadence-window token already has a successful send.
+  - Logs skip reason `duplicate_window` when already sent.
+- Added token lookup query in `convex/whatsappLogs.ts`:
+  - `hasSuccessfulSendForToken` queries `whatsapp_message_logs` by token and returns true if any `status === "sent"`.
+- Added index for token lookup in `convex/schema.ts`:
+  - `whatsapp_message_logs` now has `.index("by_token", ["token"])`.
+- Expanded idempotency/retry tests in `tests/schedulerDeliveryProcessing.test.ts`:
+  - Duplicate-window reruns are skipped.
+  - Retry remains allowed after failure, and once successful, later reruns are blocked.
+- Updated `prd.json`:
+  - Set `US-004` `passes: true`.
+- Appended progress in `progress.txt` and added a reusable Codebase Pattern.
+
+Quality checks run and passing:
+- `npm run lint`
+- `npx tsc --noEmit`
+- `npm test`
+
+Remaining work:
+- `US-005` is still `passes: false`, so this iteration is complete without stop condition.
