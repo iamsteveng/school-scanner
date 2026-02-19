@@ -12,6 +12,7 @@ Started: Wed Feb 18 08:41:46 UTC 2026
 - Keep cadence-specific scheduler candidate filters explicit (`isDailyPremiumCandidate`, `isWeeklyFreeCandidate`) so plan/tier targeting stays obvious and independently testable
 - Keep scheduler skip logging inside shared candidate-processing flow so inactive/non-deliverable reasons are observable instead of being silently filtered upstream
 - Enforce delivery idempotency by checking `whatsapp_message_logs` for an existing `status=sent` record keyed by deterministic token (`summary_${cadence}_${userId}_${windowStart}_${windowEnd}`) before attempting a send
+- For CI-evidence stories, add a small docs-checklist test that asserts required coverage references and quality-gate commands are present in the task evidence markdown
 ---
 ## 2026-02-18 00:00:00 UTC - US-001
 Thread: https://ampcode.com/threads/
@@ -108,4 +109,15 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
   - Patterns discovered (e.g., "Use deterministic summary delivery tokens as idempotency keys and check for prior `sent` logs before generating/sending content")
   - Gotchas encountered (e.g., "Token generation alone is not idempotency; pre-send `sent` existence checks are required to avoid duplicate deliveries on rerun")
   - Useful context (e.g., "Retry behavior should only block after a successful send log exists; failed runs must remain retryable")
+---
+## 2026-02-19 00:32:51 UTC - US-005
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Added Phase 5.2 CI evidence doc with an explicit coverage matrix for daily/weekly selection, skip/idempotency behavior, and delivery logging outcomes.
+- Added a docs-checklist unit test that enforces required evidence content in the Phase 5.2 task markdown.
+- Ran quality gates and documented the passing results in the CI evidence file.
+- Files changed: docs/tasks/phase-5-2-whatsapp-delivery-scheduler-ci-evidence.md, tests/phase52DocsChecklist.test.ts, prd.json, progress.txt
+- **Learnings for future iterations:**
+  - Patterns discovered (e.g., "Protect CI evidence docs with a small vitest checklist so coverage/command evidence does not silently regress")
+  - Gotchas encountered (e.g., "Keep the test-summary counts in evidence docs synchronized with the latest `npm test` output")
+  - Useful context (e.g., "Phase 5.2 scheduler evidence doc path is `docs/tasks/phase-5-2-whatsapp-delivery-scheduler-ci-evidence.md`")
 ---

@@ -71,7 +71,7 @@
         "CI evidence is documented in task docs"
       ],
       "priority": 5,
-      "passes": false,
+      "passes": true,
       "notes": ""
     }
   ]
