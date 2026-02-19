@@ -44,4 +44,20 @@ crons.interval(
   { limit: 10 },
 );
 
+// Phase 5.2: PREMIUM daily summary delivery scheduler.
+crons.interval(
+  "daily-premium-summary-delivery-cron",
+  { hours: 24 },
+  internal.jobs.runDailyPremiumSummaryDelivery,
+  {},
+);
+
+// Phase 5.2: FREE weekly summary delivery scheduler.
+crons.interval(
+  "weekly-free-summary-delivery-cron",
+  { hours: 24 * 7 },
+  internal.jobs.runWeeklyFreeSummaryDelivery,
+  {},
+);
+
 export default crons;

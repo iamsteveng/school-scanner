@@ -31,6 +31,7 @@ export default defineSchema({
     statusUpdatedAt: v.optional(v.number()),
   })
     .index("by_phone", ["phone"])
+    .index("by_token", ["token"])
     .index("by_status", ["status"])
     .index("by_message_sid", ["messageSid"]),
   whatsapp_webhook_logs: defineTable({

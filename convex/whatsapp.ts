@@ -7,30 +7,14 @@ import { internal } from "./_generated/api";
 
 const DEFAULT_ALLOWED_HOSTS = ["localhost", "127.0.0.1", ".vercel.app"];
 
-export async function sendWhatsAppVerification(options: {
-  ctx: Pick<ActionCtx, "runMutation">;
+type WhatsAppSenderCtx = Pick<ActionCtx, "runMutation">;
+
+async function sendWhatsAppMessageInternal(options: {
+  ctx: WhatsAppSenderCtx;
   phone: string;
+  body: string;
   token: string;
-  baseUrl?: string;
-}): Promise<{ ok: true }> {
-  const allowDynamic = process.env.ALLOW_DYNAMIC_BASE_URL === "true";
-  const prodBaseUrl = process.env.APP_BASE_URL_PROD;
-  const allowedHosts = process.env.ALLOWED_BASE_URL_HOSTS?.split(",").map(
-    (host) => host.trim(),
-  );
-
-  const resolvedBaseUrl = resolveBaseUrl({
-    allowDynamic,
-    prodBaseUrl,
-    baseUrlFromClient: options.baseUrl,
-    allowedHosts,
-  });
-
-  const verificationLink = buildVerificationLink(
-    resolvedBaseUrl,
-    options.token,
-  );
-
+}): Promise<{ ok: true; messageSid?: string }> {
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken = process.env.TWILIO_AUTH_TOKEN;
   const from = process.env.TWILIO_WHATSAPP_FROM;
@@ -43,8 +27,6 @@ export async function sendWhatsAppVerification(options: {
   const to = options.phone.startsWith("whatsapp:")
     ? options.phone
     : `whatsapp:${options.phone}`;
-
-  const body = `Your verification link: ${verificationLink}`;
 
   try {
     const response = await fetch(
@@ -60,7 +42,7 @@ export async function sendWhatsAppVerification(options: {
         body: new URLSearchParams({
           To: to,
           From: from,
-          Body: body,
+          Body: options.body,
           ...(statusCallbackUrl
             ? {
                 StatusCallback: statusCallbackUrl,
@@ -92,7 +74,7 @@ export async function sendWhatsAppVerification(options: {
       messageSid: payload.sid,
     });
 
-    return { ok: true };
+    return { ok: true, messageSid: payload.sid };
   } catch (error) {
     if (error instanceof Error) {
       await options.ctx.runMutation(internal.whatsappLogs.logWhatsAppSend, {
@@ -105,6 +87,47 @@ export async function sendWhatsAppVerification(options: {
     }
     throw error;
   }
+}
+
+export async function sendWhatsAppVerification(options: {
+  ctx: WhatsAppSenderCtx;
+  phone: string;
+  token: string;
+  baseUrl?: string;
+}): Promise<{ ok: true }> {
+  const allowDynamic = process.env.ALLOW_DYNAMIC_BASE_URL === "true";
+  const prodBaseUrl = process.env.APP_BASE_URL_PROD;
+  const allowedHosts = process.env.ALLOWED_BASE_URL_HOSTS?.split(",").map(
+    (host) => host.trim(),
+  );
+
+  const resolvedBaseUrl = resolveBaseUrl({
+    allowDynamic,
+    prodBaseUrl,
+    baseUrlFromClient: options.baseUrl,
+    allowedHosts,
+  });
+
+  const verificationLink = buildVerificationLink(
+    resolvedBaseUrl,
+    options.token,
+  );
+  await sendWhatsAppMessageInternal({
+    ctx: options.ctx,
+    phone: options.phone,
+    body: `Your verification link: ${verificationLink}`,
+    token: options.token,
+  });
+  return { ok: true };
+}
+
+export async function sendWhatsAppMessage(options: {
+  ctx: WhatsAppSenderCtx;
+  phone: string;
+  body: string;
+  token: string;
+}): Promise<{ ok: true; messageSid?: string }> {
+  return await sendWhatsAppMessageInternal(options);
 }
 
 export function resolveBaseUrl(options: {
