@@ -17,7 +17,7 @@
       "id": "US-003",
       "title": "Attach metadata for downstream lifecycle handling",
       "priority": 3,
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-004",

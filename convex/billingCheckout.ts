@@ -7,6 +7,8 @@ import { api } from "./_generated/api";
 const STRIPE_CHECKOUT_URL = "https://api.stripe.com/v1/checkout/sessions";
 const CHECKOUT_SUCCESS_PATH = "/billing/success";
 const CHECKOUT_CANCEL_PATH = "/upgrade?canceled=1";
+const CHECKOUT_PLAN_CONTEXT = "premium_subscription";
+const CHECKOUT_SOURCE = "upgrade_page";
 
 export type CreateCheckoutSessionSuccessResult = {
   ok: true;
@@ -84,6 +86,7 @@ export async function createStripeCheckoutSessionRequest(options: {
   fetchImpl?: typeof fetch;
 }): Promise<CreateCheckoutSessionSuccessResult> {
   const fetchImpl = options.fetchImpl ?? fetch;
+  const metadata = buildCheckoutMetadata(options.userId);
   const params = new URLSearchParams({
     mode: "subscription",
     "line_items[0][price]": options.priceId,
@@ -91,6 +94,12 @@ export async function createStripeCheckoutSessionRequest(options: {
     success_url: options.successUrl,
     cancel_url: options.cancelUrl,
     client_reference_id: options.userId,
+    "metadata[internal_user_id]": metadata.internalUserId,
+    "metadata[plan_context]": metadata.planContext,
+    "metadata[source]": metadata.source,
+    "subscription_data[metadata][internal_user_id]": metadata.internalUserId,
+    "subscription_data[metadata][plan_context]": metadata.planContext,
+    "subscription_data[metadata][source]": metadata.source,
   });
 
   const response = await fetchImpl(STRIPE_CHECKOUT_URL, {
@@ -117,6 +126,20 @@ export async function createStripeCheckoutSessionRequest(options: {
     sessionId: payload.id,
     checkoutUrl: payload.url,
   };
+}
+
+/**
+ * Metadata contract sent to Stripe Checkout + Subscription records.
+ * - `internal_user_id`: canonical internal user id for webhook reconciliation.
+ * - `plan_context`: identifies the plan lifecycle path for downstream handlers.
+ * - `source`: identifies this checkout origin surface for operational tracing.
+ */
+function buildCheckoutMetadata(userId: string) {
+  return {
+    internalUserId: userId,
+    planContext: CHECKOUT_PLAN_CONTEXT,
+    source: CHECKOUT_SOURCE,
+  } as const;
 }
 
 export function enforceCheckoutEligibility(

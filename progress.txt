@@ -2,6 +2,7 @@
 - New external provider integrations in Convex should be implemented as `"use node"` actions plus exported pure helper functions so tests can run without Convex runtime wiring.
 - For provider API request tests, inject `fetchImpl` into helpers and assert `URLSearchParams` payload fields directly for deterministic coverage of outbound contracts.
 - For backend eligibility gates, return typed `{ ok: false, code: "ineligible", reason, message }` outcomes instead of throwing so frontend callers can branch deterministically.
+- For Stripe Checkout lifecycle reconciliation, mirror metadata on both `metadata[...]` and `subscription_data[metadata][...]` so downstream webhook handlers can read consistent linkage fields.
 
 ## 2026-02-21 03:25 UTC - US-001
 Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
@@ -20,6 +21,26 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
     - Avoid `NodeJS.ProcessEnv` as a test helper input type in this repo; use a looser `Record<string, string | undefined>` shape to keep strict typecheck green.
   - Useful context (e.g., "the evaluation panel is in component X")
     - Stripe checkout creation now lives in `convex/billingCheckout.ts`; subsequent stories can extend this file for eligibility, metadata, and duplicate-request behavior.
+---
+
+## 2026-02-21 07:12 UTC - US-003
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Implemented Stripe checkout metadata attachment in `createStripeCheckoutSessionRequest` by adding `internal_user_id`, `plan_context`, and `source` on both Checkout Session metadata and subscription metadata payloads.
+- Added a metadata contract comment block and a dedicated `buildCheckoutMetadata` helper in `convex/billingCheckout.ts` to document and centralize lifecycle linkage fields.
+- Expanded checkout request tests to assert all metadata keys are present in the outgoing Stripe form body.
+- Ran quality checks: `npx tsc --noEmit`, `npm run lint`, and `npm test` all passing.
+- Files changed
+  - `convex/billingCheckout.ts`
+  - `tests/billingCheckout.test.ts`
+  - `prd.json`
+  - `progress.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Mirror Stripe metadata at both Checkout Session and Subscription creation levels to keep webhook reconciliation deterministic across Stripe event types.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Keep metadata key names snake_case and stable because downstream webhook mapping depends on exact field names.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - `buildCheckoutMetadata` in `convex/billingCheckout.ts` is now the canonical source for checkout lifecycle metadata fields.
 ---
 
 ## 2026-02-21 03:28 UTC - US-002

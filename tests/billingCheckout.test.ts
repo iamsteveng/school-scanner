@@ -35,6 +35,18 @@ describe("billing checkout", () => {
       expect(body.get("cancel_url")).toBe(
         "https://school-scanner.example.com/upgrade?canceled=1",
       );
+      expect(body.get("metadata[internal_user_id]")).toBe("user_123");
+      expect(body.get("metadata[plan_context]")).toBe("premium_subscription");
+      expect(body.get("metadata[source]")).toBe("upgrade_page");
+      expect(body.get("subscription_data[metadata][internal_user_id]")).toBe(
+        "user_123",
+      );
+      expect(body.get("subscription_data[metadata][plan_context]")).toBe(
+        "premium_subscription",
+      );
+      expect(body.get("subscription_data[metadata][source]")).toBe(
+        "upgrade_page",
+      );
       return {
         ok: true,
         json: async () => ({
