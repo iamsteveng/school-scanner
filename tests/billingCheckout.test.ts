@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildCheckoutRedirectUrls,
   createStripeCheckoutSessionRequest,
   enforceCheckoutDebounceAttempt,
   enforceCheckoutEligibility,
   releaseCheckoutDebounceAttempt,
+  resolveCheckoutRedirectUrls,
   resolveActiveStripePriceId,
 } from "../convex/billingCheckout";
 
@@ -72,6 +74,41 @@ describe("billing checkout", () => {
       sessionId: "cs_test_123",
       checkoutUrl: "https://checkout.stripe.com/c/pay/cs_test_123",
     });
+  });
+
+  it("builds fixed checkout redirect paths from base url", () => {
+    const urls = buildCheckoutRedirectUrls(
+      "https://school-scanner.example.com",
+    );
+    expect(urls).toEqual({
+      successUrl: "https://school-scanner.example.com/billing/success",
+      cancelUrl: "https://school-scanner.example.com/upgrade?canceled=1",
+    });
+  });
+
+  it("normalizes APP_BASE_URL_PROD and preserves fixed redirect contract", () => {
+    const urls = resolveCheckoutRedirectUrls({
+      APP_BASE_URL_PROD:
+        "https://school-scanner.example.com/app?utm_source=test#fragment",
+    });
+    expect(urls).toEqual({
+      successUrl: "https://school-scanner.example.com/billing/success",
+      cancelUrl: "https://school-scanner.example.com/upgrade?canceled=1",
+    });
+  });
+
+  it("throws when APP_BASE_URL_PROD is missing", () => {
+    expect(() => resolveCheckoutRedirectUrls({})).toThrow(
+      "Missing APP_BASE_URL_PROD.",
+    );
+  });
+
+  it("throws when APP_BASE_URL_PROD uses unsupported protocol", () => {
+    expect(() =>
+      resolveCheckoutRedirectUrls({
+        APP_BASE_URL_PROD: "ftp://school-scanner.example.com",
+      }),
+    ).toThrow("APP_BASE_URL_PROD must use http or https.");
   });
 
   it("allows verified FREE users to create checkout sessions", () => {

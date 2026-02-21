@@ -49,6 +49,10 @@ type CheckoutEligibilityUser = {
 };
 
 type EnvConfig = Record<string, string | undefined>;
+type CheckoutRedirectUrls = {
+  successUrl: string;
+  cancelUrl: string;
+};
 
 export function resolveActiveStripePriceId(
   env: EnvConfig = process.env,
@@ -86,6 +90,21 @@ function resolveAppBaseUrl(env: EnvConfig = process.env): string {
   }
 
   return `${parsed.protocol}//${parsed.host}`;
+}
+
+export function buildCheckoutRedirectUrls(
+  baseUrl: string,
+): CheckoutRedirectUrls {
+  return {
+    successUrl: `${baseUrl}${CHECKOUT_SUCCESS_PATH}`,
+    cancelUrl: `${baseUrl}${CHECKOUT_CANCEL_PATH}`,
+  };
+}
+
+export function resolveCheckoutRedirectUrls(
+  env: EnvConfig = process.env,
+): CheckoutRedirectUrls {
+  return buildCheckoutRedirectUrls(resolveAppBaseUrl(env));
 }
 
 export async function createStripeCheckoutSessionRequest(options: {
@@ -241,15 +260,15 @@ export const createCheckoutSession = action({
 
     const secretKey = resolveStripeSecretKey();
     const priceId = resolveActiveStripePriceId();
-    const baseUrl = resolveAppBaseUrl();
+    const redirectUrls = resolveCheckoutRedirectUrls();
 
     try {
       return await createStripeCheckoutSessionRequest({
         secretKey,
         priceId,
         userId: args.userId,
-        successUrl: `${baseUrl}${CHECKOUT_SUCCESS_PATH}`,
-        cancelUrl: `${baseUrl}${CHECKOUT_CANCEL_PATH}`,
+        successUrl: redirectUrls.successUrl,
+        cancelUrl: redirectUrls.cancelUrl,
       });
     } catch (error) {
       releaseCheckoutDebounceAttempt(args.userId);

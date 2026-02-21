@@ -4,6 +4,7 @@
 - For backend eligibility gates, return typed `{ ok: false, code: "ineligible", reason, message }` outcomes instead of throwing so frontend callers can branch deterministically.
 - For Stripe Checkout lifecycle reconciliation, mirror metadata on both `metadata[...]` and `subscription_data[metadata][...]` so downstream webhook handlers can read consistent linkage fields.
 - For rapid-request guards in Convex actions, keep debounce logic in an exported pure helper with injectable time/state and release the lock on provider-call failure to preserve deterministic retries.
+- For fixed provider redirect contracts, derive URLs from a canonicalized env origin helper and append fixed path constants so tests can validate success/cancel behavior without Convex runtime mocks.
 
 ## 2026-02-21 03:25 UTC - US-001
 Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
@@ -83,4 +84,23 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
     - If debounce state is set before provider calls to prevent concurrent duplicates, explicitly release it on provider failure to avoid accidental temporary lockouts.
   - Useful context (e.g., "the evaluation panel is in component X")
     - Typed debounce responses now use `{ ok: false, code: "debounced", reason: "duplicate_rapid_attempt", retryAfterMs }` in `convex/billingCheckout.ts`.
+---
+
+## 2026-02-21 07:55 UTC - US-005
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Implemented fixed redirect contract helpers in `convex/billingCheckout.ts` by adding `buildCheckoutRedirectUrls` and `resolveCheckoutRedirectUrls`, and updated `createCheckoutSession` to consume these helpers for deterministic success/cancel URL construction.
+- Expanded `tests/billingCheckout.test.ts` with redirect contract coverage for fixed paths, canonicalization of `APP_BASE_URL_PROD`, and missing/invalid base URL error cases while keeping eligibility and duplicate-click coverage intact.
+- Ran quality checks: `npx tsc --noEmit`, `npm run lint`, and `npm test` all passing.
+- Files changed
+  - `convex/billingCheckout.ts`
+  - `tests/billingCheckout.test.ts`
+  - `prd.json`
+  - `progress.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Redirect contracts are easiest to maintain by isolating URL composition in exported helpers and testing helper outputs directly.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - `APP_BASE_URL_PROD` may include path/query/fragment; canonicalize to origin before appending fixed redirect paths or Stripe callbacks can drift.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Redirect URL helpers now live in `convex/billingCheckout.ts`, and tests in `tests/billingCheckout.test.ts` validate both fixed path constants and env parsing behavior.
 ---

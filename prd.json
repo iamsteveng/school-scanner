@@ -29,7 +29,7 @@
       "id": "US-005",
       "title": "Fixed redirect contract and tests",
       "priority": 5,
-      "passes": false
+      "passes": true
     }
   ]
 }
