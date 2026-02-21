@@ -1,6 +1,7 @@
 ## Codebase Patterns
 - New external provider integrations in Convex should be implemented as `"use node"` actions plus exported pure helper functions so tests can run without Convex runtime wiring.
 - For provider API request tests, inject `fetchImpl` into helpers and assert `URLSearchParams` payload fields directly for deterministic coverage of outbound contracts.
+- For backend eligibility gates, return typed `{ ok: false, code: "ineligible", reason, message }` outcomes instead of throwing so frontend callers can branch deterministically.
 
 ## 2026-02-21 03:25 UTC - US-001
 Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
@@ -19,4 +20,25 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
     - Avoid `NodeJS.ProcessEnv` as a test helper input type in this repo; use a looser `Record<string, string | undefined>` shape to keep strict typecheck green.
   - Useful context (e.g., "the evaluation panel is in component X")
     - Stripe checkout creation now lives in `convex/billingCheckout.ts`; subsequent stories can extend this file for eligibility, metadata, and duplicate-request behavior.
+---
+
+## 2026-02-21 03:28 UTC - US-002
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Implemented eligibility enforcement for checkout in `convex/billingCheckout.ts` using `enforceCheckoutEligibility`, allowing only verified non-PREMIUM users and returning typed ineligible outcomes for not found, unverified, or active premium users.
+- Updated `convex/usersQueries.ts` to include `verifiedAt` in `getUser` so checkout eligibility can evaluate verification state server-side.
+- Expanded `tests/billingCheckout.test.ts` with coverage for FREE eligibility, PREMIUM rejection, and unverified rejection using typed reasons/messages.
+- Ran quality checks: `npx tsc --noEmit`, `npm run lint`, and `npm test` all passing.
+- Files changed:
+  - `convex/billingCheckout.ts`
+  - `convex/usersQueries.ts`
+  - `tests/billingCheckout.test.ts`
+  - `prd.json`
+  - `progress.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Checkout eligibility logic is easiest to keep testable by exporting a pure eligibility helper and reusing it inside the Convex action handler.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - If action eligibility depends on verification state, ensure query payloads include `verifiedAt`; existing user query outputs may omit it by default.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - `createCheckoutSession` now returns a union of success and typed `ineligible` outcomes, which downstream checkout callers should handle explicitly.
 ---

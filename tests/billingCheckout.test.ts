@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   createStripeCheckoutSessionRequest,
+  enforceCheckoutEligibility,
   resolveActiveStripePriceId,
 } from "../convex/billingCheckout";
 
@@ -56,6 +57,39 @@ describe("billing checkout", () => {
       ok: true,
       sessionId: "cs_test_123",
       checkoutUrl: "https://checkout.stripe.com/c/pay/cs_test_123",
+    });
+  });
+
+  it("allows verified FREE users to create checkout sessions", () => {
+    const result = enforceCheckoutEligibility({
+      plan: "FREE",
+      verifiedAt: Date.now(),
+    });
+    expect(result).toBeNull();
+  });
+
+  it("blocks active PREMIUM users with typed ineligible reason", () => {
+    const result = enforceCheckoutEligibility({
+      plan: "PREMIUM",
+      verifiedAt: Date.now(),
+    });
+    expect(result).toEqual({
+      ok: false,
+      code: "ineligible",
+      reason: "already_premium_active",
+      message: "User already has an active premium plan.",
+    });
+  });
+
+  it("blocks unverified users with typed ineligible reason", () => {
+    const result = enforceCheckoutEligibility({
+      plan: "FREE",
+    });
+    expect(result).toEqual({
+      ok: false,
+      code: "ineligible",
+      reason: "user_not_verified",
+      message: "User must complete verification before checkout.",
     });
   });
 });

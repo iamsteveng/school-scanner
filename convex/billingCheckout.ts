@@ -8,10 +8,31 @@ const STRIPE_CHECKOUT_URL = "https://api.stripe.com/v1/checkout/sessions";
 const CHECKOUT_SUCCESS_PATH = "/billing/success";
 const CHECKOUT_CANCEL_PATH = "/upgrade?canceled=1";
 
-export type CreateCheckoutSessionResult = {
+export type CreateCheckoutSessionSuccessResult = {
   ok: true;
   sessionId: string;
   checkoutUrl: string;
+};
+
+export type CreateCheckoutSessionIneligibleReason =
+  | "user_not_found"
+  | "user_not_verified"
+  | "already_premium_active";
+
+export type CreateCheckoutSessionIneligibleResult = {
+  ok: false;
+  code: "ineligible";
+  reason: CreateCheckoutSessionIneligibleReason;
+  message: string;
+};
+
+export type CreateCheckoutSessionResult =
+  | CreateCheckoutSessionSuccessResult
+  | CreateCheckoutSessionIneligibleResult;
+
+type CheckoutEligibilityUser = {
+  plan: "FREE" | "PREMIUM";
+  verifiedAt?: number;
 };
 
 type EnvConfig = Record<string, string | undefined>;
@@ -61,7 +82,7 @@ export async function createStripeCheckoutSessionRequest(options: {
   successUrl: string;
   cancelUrl: string;
   fetchImpl?: typeof fetch;
-}): Promise<CreateCheckoutSessionResult> {
+}): Promise<CreateCheckoutSessionSuccessResult> {
   const fetchImpl = options.fetchImpl ?? fetch;
   const params = new URLSearchParams({
     mode: "subscription",
@@ -98,6 +119,39 @@ export async function createStripeCheckoutSessionRequest(options: {
   };
 }
 
+export function enforceCheckoutEligibility(
+  user: CheckoutEligibilityUser | null,
+): CreateCheckoutSessionIneligibleResult | null {
+  if (!user) {
+    return {
+      ok: false,
+      code: "ineligible",
+      reason: "user_not_found",
+      message: "User not found.",
+    };
+  }
+
+  if (typeof user.verifiedAt !== "number") {
+    return {
+      ok: false,
+      code: "ineligible",
+      reason: "user_not_verified",
+      message: "User must complete verification before checkout.",
+    };
+  }
+
+  if (user.plan === "PREMIUM") {
+    return {
+      ok: false,
+      code: "ineligible",
+      reason: "already_premium_active",
+      message: "User already has an active premium plan.",
+    };
+  }
+
+  return null;
+}
+
 export const createCheckoutSession = action({
   args: {
     userId: v.id("users"),
@@ -106,8 +160,9 @@ export const createCheckoutSession = action({
     const user = await ctx.runQuery(api.usersQueries.getUser, {
       userId: args.userId,
     });
-    if (!user) {
-      throw new Error("User not found.");
+    const ineligibleResult = enforceCheckoutEligibility(user);
+    if (ineligibleResult) {
+      return ineligibleResult;
     }
 
     const secretKey = resolveStripeSecretKey();
@@ -117,7 +172,7 @@ export const createCheckoutSession = action({
     return await createStripeCheckoutSessionRequest({
       secretKey,
       priceId,
-      userId: user._id,
+      userId: args.userId,
       successUrl: `${baseUrl}${CHECKOUT_SUCCESS_PATH}`,
       cancelUrl: `${baseUrl}${CHECKOUT_CANCEL_PATH}`,
     });

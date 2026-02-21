@@ -11,7 +11,7 @@
       "id": "US-002",
       "title": "Enforce user eligibility",
       "priority": 2,
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-003",
