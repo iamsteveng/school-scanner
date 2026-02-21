@@ -3,6 +3,7 @@
 - For provider API request tests, inject `fetchImpl` into helpers and assert `URLSearchParams` payload fields directly for deterministic coverage of outbound contracts.
 - For backend eligibility gates, return typed `{ ok: false, code: "ineligible", reason, message }` outcomes instead of throwing so frontend callers can branch deterministically.
 - For Stripe Checkout lifecycle reconciliation, mirror metadata on both `metadata[...]` and `subscription_data[metadata][...]` so downstream webhook handlers can read consistent linkage fields.
+- For rapid-request guards in Convex actions, keep debounce logic in an exported pure helper with injectable time/state and release the lock on provider-call failure to preserve deterministic retries.
 
 ## 2026-02-21 03:25 UTC - US-001
 Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
@@ -60,6 +61,26 @@ Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
     - Checkout eligibility logic is easiest to keep testable by exporting a pure eligibility helper and reusing it inside the Convex action handler.
   - Gotchas encountered (e.g., "don't forget to update Z when changing W")
     - If action eligibility depends on verification state, ensure query payloads include `verifiedAt`; existing user query outputs may omit it by default.
-  - Useful context (e.g., "the evaluation panel is in component X")
+- Useful context (e.g., "the evaluation panel is in component X")
     - `createCheckoutSession` now returns a union of success and typed `ineligible` outcomes, which downstream checkout callers should handle explicitly.
+---
+
+## 2026-02-21 07:28 UTC - US-004
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Implemented duplicate rapid-attempt debounce in `createCheckoutSession` by adding a deterministic per-user guard (`enforceCheckoutDebounceAttempt`) that returns a typed `debounced` outcome with `retryAfterMs`.
+- Added failure-path lock release (`releaseCheckoutDebounceAttempt`) so Stripe provider errors do not leave users blocked by stale debounce state.
+- Expanded checkout tests with debounce coverage for first-attempt allow, rapid duplicate rejection, post-window allow, and lock release behavior.
+- Ran quality checks: `npx tsc --noEmit`, `npm run lint`, and `npm test` all passing.
+- Files changed
+  - `convex/billingCheckout.ts`
+  - `tests/billingCheckout.test.ts`
+  - `prd.json`
+  - `progress.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Debounce behavior is easiest to test by exporting pure guard helpers with injectable clock/state inputs rather than coupling tests to Convex runtime state.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - If debounce state is set before provider calls to prevent concurrent duplicates, explicitly release it on provider failure to avoid accidental temporary lockouts.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Typed debounce responses now use `{ ok: false, code: "debounced", reason: "duplicate_rapid_attempt", retryAfterMs }` in `convex/billingCheckout.ts`.
 ---

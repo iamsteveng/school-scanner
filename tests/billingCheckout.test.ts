@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   createStripeCheckoutSessionRequest,
+  enforceCheckoutDebounceAttempt,
   enforceCheckoutEligibility,
+  releaseCheckoutDebounceAttempt,
   resolveActiveStripePriceId,
 } from "../convex/billingCheckout";
 
@@ -103,5 +105,68 @@ describe("billing checkout", () => {
       reason: "user_not_verified",
       message: "User must complete verification before checkout.",
     });
+  });
+
+  it("allows first checkout attempt and debounces rapid duplicate requests", () => {
+    const state = new Map<string, number>();
+    const firstResult = enforceCheckoutDebounceAttempt({
+      userId: "user_123",
+      nowMs: 1_000,
+      state,
+      windowMs: 10_000,
+    });
+    expect(firstResult).toBeNull();
+
+    const secondResult = enforceCheckoutDebounceAttempt({
+      userId: "user_123",
+      nowMs: 4_000,
+      state,
+      windowMs: 10_000,
+    });
+    expect(secondResult).toEqual({
+      ok: false,
+      code: "debounced",
+      reason: "duplicate_rapid_attempt",
+      message: "Checkout already started. Please wait before retrying.",
+      retryAfterMs: 7_000,
+    });
+  });
+
+  it("allows checkout after debounce window elapses", () => {
+    const state = new Map<string, number>();
+    enforceCheckoutDebounceAttempt({
+      userId: "user_123",
+      nowMs: 1_000,
+      state,
+      windowMs: 10_000,
+    });
+
+    const result = enforceCheckoutDebounceAttempt({
+      userId: "user_123",
+      nowMs: 12_000,
+      state,
+      windowMs: 10_000,
+    });
+    expect(result).toBeNull();
+  });
+
+  it("releases debounce lock after failed checkout attempt", () => {
+    const state = new Map<string, number>();
+    enforceCheckoutDebounceAttempt({
+      userId: "user_123",
+      nowMs: 1_000,
+      state,
+      windowMs: 10_000,
+    });
+
+    releaseCheckoutDebounceAttempt("user_123", state);
+
+    const result = enforceCheckoutDebounceAttempt({
+      userId: "user_123",
+      nowMs: 1_001,
+      state,
+      windowMs: 10_000,
+    });
+    expect(result).toBeNull();
   });
 });

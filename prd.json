@@ -23,7 +23,7 @@
       "id": "US-004",
       "title": "Debounce duplicate rapid checkout attempts",
       "priority": 4,
-      "passes": false
+      "passes": true
     },
     {
       "id": "US-005",

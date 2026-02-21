@@ -9,6 +9,8 @@ const CHECKOUT_SUCCESS_PATH = "/billing/success";
 const CHECKOUT_CANCEL_PATH = "/upgrade?canceled=1";
 const CHECKOUT_PLAN_CONTEXT = "premium_subscription";
 const CHECKOUT_SOURCE = "upgrade_page";
+const CHECKOUT_DEBOUNCE_WINDOW_MS = 10_000;
+const recentCheckoutAttemptsByUserId = new Map<string, number>();
 
 export type CreateCheckoutSessionSuccessResult = {
   ok: true;
@@ -28,9 +30,18 @@ export type CreateCheckoutSessionIneligibleResult = {
   message: string;
 };
 
+export type CreateCheckoutSessionDebouncedResult = {
+  ok: false;
+  code: "debounced";
+  reason: "duplicate_rapid_attempt";
+  message: string;
+  retryAfterMs: number;
+};
+
 export type CreateCheckoutSessionResult =
   | CreateCheckoutSessionSuccessResult
-  | CreateCheckoutSessionIneligibleResult;
+  | CreateCheckoutSessionIneligibleResult
+  | CreateCheckoutSessionDebouncedResult;
 
 type CheckoutEligibilityUser = {
   plan: "FREE" | "PREMIUM";
@@ -175,6 +186,39 @@ export function enforceCheckoutEligibility(
   return null;
 }
 
+export function enforceCheckoutDebounceAttempt(options: {
+  userId: string;
+  nowMs: number;
+  state?: Map<string, number>;
+  windowMs?: number;
+}): CreateCheckoutSessionDebouncedResult | null {
+  const state = options.state ?? recentCheckoutAttemptsByUserId;
+  const windowMs = options.windowMs ?? CHECKOUT_DEBOUNCE_WINDOW_MS;
+  const lastAttemptAt = state.get(options.userId);
+  if (lastAttemptAt !== undefined) {
+    const elapsedMs = Math.max(0, options.nowMs - lastAttemptAt);
+    if (elapsedMs < windowMs) {
+      return {
+        ok: false,
+        code: "debounced",
+        reason: "duplicate_rapid_attempt",
+        message: "Checkout already started. Please wait before retrying.",
+        retryAfterMs: windowMs - elapsedMs,
+      };
+    }
+  }
+
+  state.set(options.userId, options.nowMs);
+  return null;
+}
+
+export function releaseCheckoutDebounceAttempt(
+  userId: string,
+  state: Map<string, number> = recentCheckoutAttemptsByUserId,
+) {
+  state.delete(userId);
+}
+
 export const createCheckoutSession = action({
   args: {
     userId: v.id("users"),
@@ -187,17 +231,29 @@ export const createCheckoutSession = action({
     if (ineligibleResult) {
       return ineligibleResult;
     }
+    const debouncedResult = enforceCheckoutDebounceAttempt({
+      userId: args.userId,
+      nowMs: Date.now(),
+    });
+    if (debouncedResult) {
+      return debouncedResult;
+    }
 
     const secretKey = resolveStripeSecretKey();
     const priceId = resolveActiveStripePriceId();
     const baseUrl = resolveAppBaseUrl();
 
-    return await createStripeCheckoutSessionRequest({
-      secretKey,
-      priceId,
-      userId: args.userId,
-      successUrl: `${baseUrl}${CHECKOUT_SUCCESS_PATH}`,
-      cancelUrl: `${baseUrl}${CHECKOUT_CANCEL_PATH}`,
-    });
+    try {
+      return await createStripeCheckoutSessionRequest({
+        secretKey,
+        priceId,
+        userId: args.userId,
+        successUrl: `${baseUrl}${CHECKOUT_SUCCESS_PATH}`,
+        cancelUrl: `${baseUrl}${CHECKOUT_CANCEL_PATH}`,
+      });
+    } catch (error) {
+      releaseCheckoutDebounceAttempt(args.userId);
+      throw error;
+    }
   },
 });
