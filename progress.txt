@@ -1,0 +1,22 @@
+## Codebase Patterns
+- New external provider integrations in Convex should be implemented as `"use node"` actions plus exported pure helper functions so tests can run without Convex runtime wiring.
+- For provider API request tests, inject `fetchImpl` into helpers and assert `URLSearchParams` payload fields directly for deterministic coverage of outbound contracts.
+
+## 2026-02-21 03:25 UTC - US-001
+Thread: https://ampcode.com/threads/$AMP_CURRENT_THREAD_ID
+- Implemented `convex/billingCheckout.ts` with a backend Stripe Checkout session entrypoint (`createCheckoutSession`) that validates required config, resolves the active Stripe price, creates a hosted Checkout session, and returns typed URL/id output.
+- Added unit tests in `tests/billingCheckout.test.ts` to verify active price config handling and successful hosted checkout URL return from Stripe session creation.
+- Added structured PRD tracking in `prd.json` and marked `US-001` as passing.
+- Files changed:
+  - `convex/billingCheckout.ts`
+  - `tests/billingCheckout.test.ts`
+  - `prd.json`
+  - `progress.txt`
+- **Learnings for future iterations:**
+  - Patterns discovered (e.g., "this codebase uses X for Y")
+    - Convex action modules already use env-driven provider integrations (`process.env`) and are easiest to test by exporting provider call helpers.
+  - Gotchas encountered (e.g., "don't forget to update Z when changing W")
+    - Avoid `NodeJS.ProcessEnv` as a test helper input type in this repo; use a looser `Record<string, string | undefined>` shape to keep strict typecheck green.
+  - Useful context (e.g., "the evaluation panel is in component X")
+    - Stripe checkout creation now lives in `convex/billingCheckout.ts`; subsequent stories can extend this file for eligibility, metadata, and duplicate-request behavior.
+---

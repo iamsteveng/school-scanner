@@ -1,0 +1,35 @@
+{
+  "branchName": "ralph/phase-6-1-stripe-checkout-prd",
+  "stories": [
+    {
+      "id": "US-001",
+      "title": "Create Checkout Session backend entrypoint",
+      "priority": 1,
+      "passes": true
+    },
+    {
+      "id": "US-002",
+      "title": "Enforce user eligibility",
+      "priority": 2,
+      "passes": false
+    },
+    {
+      "id": "US-003",
+      "title": "Attach metadata for downstream lifecycle handling",
+      "priority": 3,
+      "passes": false
+    },
+    {
+      "id": "US-004",
+      "title": "Debounce duplicate rapid checkout attempts",
+      "priority": 4,
+      "passes": false
+    },
+    {
+      "id": "US-005",
+      "title": "Fixed redirect contract and tests",
+      "priority": 5,
+      "passes": false
+    }
+  ]
+}
