@@ -10,6 +10,7 @@ export const getUser = query({
       _id: user._id,
       phone: user.phone,
       plan: user.plan ?? "FREE",
+      verifiedAt: user.verifiedAt,
     };
   },
 });
