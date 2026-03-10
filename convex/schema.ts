@@ -122,7 +122,7 @@ export default defineSchema({
     statusCode: v.optional(v.number()),
     contentType: v.optional(v.string()),
     contentHash: v.optional(v.string()),
-    text: v.optional(v.string()),
+    contentStorageId: v.optional(v.id("_storage")),
     error: v.optional(v.string()),
   })
     .index("by_school", ["schoolId"])
