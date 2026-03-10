@@ -352,16 +352,19 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
         rootHtml = await resp.text();
         const text = stripHtmlToText(rootHtml);
         const contentHash = text ? simpleHash(normalizeTextForHash(text)) : undefined;
+        const contentStorageId = text
+          ? await ctx.storage.store(new Blob([text], { type: "text/plain; charset=utf-8" }))
+          : undefined;
 
         const fetchedAt = Date.now();
 
-        await ctx.runMutation(api.monitoringMutations.insertSchoolPageSnapshot, {
+        await ctx.runMutation(api.monitoringMutations.upsertSchoolPageSnapshot, {
           schoolId: school._id,
           url: rootUrl,
           fetchedAt,
           statusCode,
           contentType,
-          text,
+          contentStorageId,
           contentHash,
         });
 
@@ -377,7 +380,7 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
         const fetchedAt = Date.now();
         const error = e instanceof Error ? e.message : String(e);
 
-        await ctx.runMutation(api.monitoringMutations.insertSchoolPageSnapshot, {
+        await ctx.runMutation(api.monitoringMutations.upsertSchoolPageSnapshot, {
           schoolId: school._id,
           url: rootUrl,
           fetchedAt,
@@ -462,13 +465,17 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
             changesNone += 1;
           }
 
-          await ctx.runMutation(api.monitoringMutations.insertSchoolPageSnapshot, {
+          const contentStorageId = text
+            ? await ctx.storage.store(new Blob([text], { type: "text/plain; charset=utf-8" }))
+            : undefined;
+
+          await ctx.runMutation(api.monitoringMutations.upsertSchoolPageSnapshot, {
             schoolId: school._id,
             url: u,
             fetchedAt: Date.now(),
             statusCode,
             contentType,
-            text,
+            contentStorageId,
             contentHash,
           });
 
@@ -555,7 +562,7 @@ export const runMonitoringOnceAction: ReturnType<typeof action> = action({
           pagesFetched += 1;
         } catch (e) {
           errors += 1;
-          await ctx.runMutation(api.monitoringMutations.insertSchoolPageSnapshot, {
+          await ctx.runMutation(api.monitoringMutations.upsertSchoolPageSnapshot, {
             schoolId: school._id,
             url: u,
             fetchedAt: Date.now(),

@@ -43,7 +43,7 @@ export const finishMonitoringRun = mutation({
   },
 });
 
-export const insertSchoolPageSnapshot = mutation({
+export const upsertSchoolPageSnapshot = mutation({
   args: {
     schoolId: v.id("schools"),
     url: v.string(),
@@ -51,11 +51,80 @@ export const insertSchoolPageSnapshot = mutation({
     statusCode: v.optional(v.number()),
     contentType: v.optional(v.string()),
     contentHash: v.optional(v.string()),
-    text: v.optional(v.string()),
+    contentStorageId: v.optional(v.id("_storage")),
     error: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("school_page_snapshots")
+      .withIndex("by_school_url", (q) => q.eq("schoolId", args.schoolId).eq("url", args.url))
+      .collect();
+
+    const newestExisting = existing.slice().sort((a, b) => b.fetchedAt - a.fetchedAt)[0];
+
+    for (const row of existing) {
+      if (newestExisting && row._id === newestExisting._id) continue;
+      if (row.contentStorageId) {
+        await ctx.storage.delete(row.contentStorageId);
+      }
+      await ctx.db.delete(row._id);
+    }
+
+    if (newestExisting) {
+      if (
+        newestExisting.contentStorageId &&
+        (!args.contentStorageId || args.contentStorageId !== newestExisting.contentStorageId)
+      ) {
+        await ctx.storage.delete(newestExisting.contentStorageId);
+      }
+
+      await ctx.db.patch(newestExisting._id, {
+        fetchedAt: args.fetchedAt,
+        statusCode: args.statusCode,
+        contentType: args.contentType,
+        contentHash: args.contentHash,
+        contentStorageId: args.contentStorageId,
+        error: args.error,
+      });
+      return newestExisting._id;
+    }
+
     return ctx.db.insert("school_page_snapshots", args);
+  },
+});
+
+export const cleanupSnapshotHistory = mutation({
+  args: { limitGroups: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    const limitGroups = Math.max(1, Math.min(args.limitGroups ?? 50, 200));
+    const all = await ctx.db.query("school_page_snapshots").take(5000);
+
+    const grouped = new Map<string, typeof all>();
+    for (const row of all) {
+      const key = `${String(row.schoolId)}::${row.url}`;
+      const list = grouped.get(key) ?? [];
+      list.push(row);
+      grouped.set(key, list);
+    }
+
+    let groupsProcessed = 0;
+    let snapshotsDeleted = 0;
+    for (const rows of grouped.values()) {
+      if (groupsProcessed >= limitGroups) break;
+      if (rows.length <= 1) continue;
+
+      const [, ...rest] = rows.slice().sort((a, b) => b.fetchedAt - a.fetchedAt);
+      groupsProcessed += 1;
+      for (const row of rest) {
+        if (row.contentStorageId) {
+          await ctx.storage.delete(row.contentStorageId);
+        }
+        await ctx.db.delete(row._id);
+        snapshotsDeleted += 1;
+      }
+    }
+
+    return { ok: true, groupsProcessed, snapshotsDeleted };
   },
 });
 
