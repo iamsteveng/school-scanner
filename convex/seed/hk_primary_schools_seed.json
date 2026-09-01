@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-02-02T10:23:31.041Z",
+  "generatedAt": "2026-09-01T07:33:17.403Z",
   "sources": [
     {
       "key": "aided_primary",
@@ -33,7 +33,7 @@
     }
   ],
   "countRaw": 615,
-  "countDeduped": 597,
+  "countDeduped": 598,
   "schools": [
     {
       "nameEn": "ABERDEEN ST PETER'S CATHOLIC PRIMARY SCHOOL",
@@ -69,7 +69,7 @@
       "latitude": 22.27445406,
       "longitude": 114.18746987,
       "websiteUrl": "https://guidepost.hk/locations/causeway-bay-primaryschool",
-      "sourceLastUpdate": "2024-10-25T09:37:04"
+      "sourceLastUpdate": "2026-03-02T13:33:09"
     },
     {
       "nameEn": "AD&FD OF POK OI HOSPITAL MRS CHENG YAM ON MILLENNIUM SCHOOL",
@@ -117,12 +117,12 @@
       "genderZh": "男女",
       "religionEn": "PROTESTANTISM / CHRISTIANITY",
       "religionZh": "基督教",
-      "addressEn": "PORTION OF G/F-2/F & WHOLE FLOOR OF 3/F-8/F 2 LANCASHIRE ROAD KOWLOON TONG KOWLOON",
-      "addressZh": "九龍九龍塘蘭開夏道２號地下至２樓部份及３樓至８樓全層",
+      "addressEn": "PORTION OF G/F. - 2/F. & WHOLE FLOOR OF 3/F. - 8/F., 2 LANCASHIRE ROAD, KOWLOON TONG, KOWLOON",
+      "addressZh": "九龍九龍塘蘭開夏道2號地下至2樓部份及3樓至8樓全層",
       "latitude": 22.33017328,
       "longitude": 114.17902925,
       "websiteUrl": "http://www.apskt.edu.hk",
-      "sourceLastUpdate": "2023-11-24T15:04:04"
+      "sourceLastUpdate": "2026-04-29T12:31:18"
     },
     {
       "nameEn": "ALLIANCE PRIMARY SCHOOL, SHEUNG SHUI",
@@ -244,11 +244,11 @@
       "religionEn": "NOT APPLICABLE",
       "religionZh": "不適用",
       "addressEn": "NO.1 AND 3 LUNG PAK STREET TAI WAI SHA TIN NEW TERRITORIES",
-      "addressZh": "新界沙田大圍龍柏街１號及３號",
+      "addressZh": "新界沙田大圍龍柏街1號及3號",
       "latitude": 22.36488676,
       "longitude": 114.17954438,
-      "websiteUrl": "https://anfield.edu.hk/tw",
-      "sourceLastUpdate": "2023-11-24T15:04:13"
+      "websiteUrl": "https://anfield.edu.hk",
+      "sourceLastUpdate": "2026-08-03T18:41:56"
     },
     {
       "nameEn": "ANFIELD ST. BOSCO KOON YING SCHOOL",
@@ -736,8 +736,8 @@
       "sourceLastUpdate": "2023-11-24T15:03:59"
     },
     {
-      "nameEn": "CANADIAN INTERNATIONAL SCHOOL",
-      "nameZh": "加拿大國際學校",
+      "nameEn": "CANADIAN INTERNATIONAL SCHOOL OF HONG KONG",
+      "nameZh": "香港加拿大國際學校",
       "level": "PRIMARY",
       "type": "INTERNATIONAL",
       "districtEn": "SOUTHERN",
@@ -751,7 +751,7 @@
       "latitude": 22.24251266,
       "longitude": 114.16688265,
       "websiteUrl": "http://www.cdnis.edu.hk",
-      "sourceLastUpdate": "2024-06-27T17:34:31"
+      "sourceLastUpdate": "2026-05-28T10:57:00"
     },
     {
       "nameEn": "CANOSSA PRIMARY SCHOOL",
@@ -2069,18 +2069,18 @@
       "nameZh": "郭怡雅神父紀念學校",
       "level": "PRIMARY",
       "type": "AIDED",
-      "districtEn": "KWAI TSING",
-      "districtZh": "葵青區",
+      "districtEn": "SHAM SHUI PO",
+      "districtZh": "深水埗區",
       "genderEn": "CO-ED",
       "genderZh": "男女",
       "religionEn": "CATHOLICISM",
       "religionZh": "天主教",
-      "addressEn": "ESTATE SCHOOL NO. 2 CHEUNG CHING ESTATE TSING YI NEW TERRITORIES",
-      "addressZh": "新界青衣長青邨屋邨第2校舍",
-      "latitude": 22.34819254,
-      "longitude": 114.10755953,
-      "websiteUrl": "http://www.fcms.edu.hk",
-      "sourceLastUpdate": "2023-11-24T12:19:26"
+      "addressEn": "5 LAI YING STREET, SHAM SHUI PO, KOWLOON",
+      "addressZh": "九龍深水埗荔盈街5號",
+      "latitude": 22.32738417,
+      "longitude": 114.15060039,
+      "websiteUrl": "http://fcms.edu.hk",
+      "sourceLastUpdate": "2026-08-03T17:55:20"
     },
     {
       "nameEn": "FREE METHODIST BRADBURY CHUN LEI PRIMARY SCHOOL",
@@ -2147,12 +2147,12 @@
       "genderZh": "男女",
       "religionEn": "NOT APPLICABLE",
       "religionZh": "不適用",
-      "addressEn": "KONG HA VILLAGE SHA TAU KOK NEW TERRITORIES",
-      "addressZh": "新界沙頭角崗下村",
-      "latitude": 22.547848,
-      "longitude": 114.22521543,
+      "addressEn": "SHAN TSUI VILLAGE SHA TAU KOK NEW TERRITORIES",
+      "addressZh": "新界沙頭角山咀村",
+      "latitude": 22.54953439,
+      "longitude": 114.22376355,
       "websiteUrl": "http://www.ftesps.edu.hk",
-      "sourceLastUpdate": "2023-11-24T12:18:39"
+      "sourceLastUpdate": "2023-11-24T12:19:15"
     },
     {
       "nameEn": "FUK WING STREET GOVERNMENT PRIM SCH",
@@ -2809,12 +2809,12 @@
       "genderZh": "女",
       "religionEn": "CATHOLICISM",
       "religionZh": "天主教",
-      "addressEn": "102 JUNCTION ROAD KOWLOON CITY KOWLOON",
-      "addressZh": "九龍九龍城聯合道102號",
-      "latitude": 22.33118439,
-      "longitude": 114.1872412,
-      "websiteUrl": "http://www.hfkc.edu.hk",
-      "sourceLastUpdate": "2023-11-24T12:18:27"
+      "addressEn": "G/F 99 FUK LO TSUN ROAD KOWLOON CITY KOWLOON",
+      "addressZh": "九龍九龍城福佬村道99號地下",
+      "latitude": 22.33101279,
+      "longitude": 114.18746445,
+      "websiteUrl": "",
+      "sourceLastUpdate": "2025-11-26T10:41:32"
     },
     {
       "nameEn": "HOLY FAMILY CANOSSIAN SCHOOL",
@@ -2827,12 +2827,12 @@
       "genderZh": "女",
       "religionEn": "CATHOLICISM",
       "religionZh": "天主教",
-      "addressEn": "G/F 99 FUK LO TSUN ROAD KOWLOON CITY KOWLOON",
-      "addressZh": "九龍九龍城福佬村道99號地下",
-      "latitude": 22.33101279,
-      "longitude": 114.18746445,
-      "websiteUrl": "",
-      "sourceLastUpdate": "2025-11-26T10:41:32"
+      "addressEn": "102 JUNCTION ROAD KOWLOON CITY KOWLOON",
+      "addressZh": "九龍九龍城聯合道102號",
+      "latitude": 22.33118439,
+      "longitude": 114.1872412,
+      "websiteUrl": "http://www.hfkc.edu.hk",
+      "sourceLastUpdate": "2023-11-24T12:18:27"
     },
     {
       "nameEn": "HOLY FAMILY CANOSSIAN SCHOOL (KOWLOON TONG)",
@@ -3043,12 +3043,12 @@
       "genderZh": "男女",
       "religionEn": "PROTESTANTISM / CHRISTIANITY",
       "religionZh": "基督教",
-      "addressEn": "6 ON MUK LANE, SHEK MUN, SHATIN, NEW TERRITORIES",
-      "addressZh": "新界沙田石門安睦里6號",
+      "addressEn": "SPORTS AND AQUATIC COMPLEX AND MADAM WONG LIU WAI MAN BUILDING AND 6 ON MUK LANE, SHEK MUN, SHATIN, NEW TERRITORIES",
+      "addressZh": "新界沙田石門安睦里6號及王廖惠文大樓及康體游泳大樓",
       "latitude": 22.38794736,
       "longitude": 114.20995879,
       "websiteUrl": "http://www.hkbuas.edu.hk",
-      "sourceLastUpdate": "2023-11-24T12:38:20"
+      "sourceLastUpdate": "2026-08-03T17:59:53"
     },
     {
       "nameEn": "HONG KONG INTERNATIONAL SCHOOL",
@@ -3190,26 +3190,8 @@
       "addressZh": "九龍觀塘安茵街2號",
       "latitude": 22.32767554,
       "longitude": 114.22972723,
-      "websiteUrl": "http://www.hktawts.edu.hk",
-      "sourceLastUpdate": "2025-11-26T10:31:51"
-    },
-    {
-      "nameEn": "HONGKONG JAPANESE SCHOOL",
-      "nameZh": "HONGKONG JAPANESE SCHOOL",
-      "level": "PRIMARY",
-      "type": "INTERNATIONAL",
-      "districtEn": "WAN CHAI",
-      "districtZh": "灣仔區",
-      "genderEn": "CO-ED",
-      "genderZh": "男女",
-      "religionEn": "NOT APPLICABLE",
-      "religionZh": "不適用",
-      "addressEn": "157 BLUE POOL ROAD, HONG KONG",
-      "addressZh": "香港藍塘道157號",
-      "latitude": 22.261837999999997,
-      "longitude": 114.19074819,
-      "websiteUrl": "http://www.hkjs.edu.hk",
-      "sourceLastUpdate": "2023-11-24T17:03:50"
+      "websiteUrl": "https://www.hktawts.edu.hk",
+      "sourceLastUpdate": "2026-08-03T17:55:58"
     },
     {
       "nameEn": "HONGKONG LIMAI SCHOOL",
@@ -3226,8 +3208,8 @@
       "addressZh": "九龍尖沙咀柯士甸路22-26號好兆年行(1期)高層地下2號舖，2樓201至206室，209室，210室，213室，214室，216-220室",
       "latitude": 22.30327516,
       "longitude": 114.1751142,
-      "websiteUrl": "http://www.austinschool.edu.hk",
-      "sourceLastUpdate": "2025-09-26T13:12:41"
+      "websiteUrl": "http://limai.com.hk",
+      "sourceLastUpdate": "2026-03-02T13:34:57"
     },
     {
       "nameEn": "HOP YAT CHURCH SCHOOL",
@@ -3278,7 +3260,7 @@
       "religionZh": "基督教",
       "addressEn": "182 PO KONG VILLAGE ROAD DIAMOND HILL KOWLOON (INCLUDING 6/F)",
       "addressZh": "九龍鑽石山蒲崗村道１８２號（包括６樓）",
-      "latitude": 22.345224729999998,
+      "latitude": 22.34522473,
       "longitude": 114.2054637,
       "websiteUrl": "http://www.icqm.edu.hk",
       "sourceLastUpdate": "2023-11-24T15:04:06"
@@ -3618,11 +3600,29 @@
       "religionEn": "NOT APPLICABLE",
       "religionZh": "不適用",
       "addressEn": "30 CHING WAH STREET NORTH POINT HONG KONG (EXCLUDING THE AREA OF CHILD CARE CENTRE)",
-      "addressZh": "香港北角清華街３０號（幼兒中心專用範圍除外）",
+      "addressZh": "香港北角清華街30號(幼兒中心專用範圍除外)",
       "latitude": 22.28905555,
       "longitude": 114.19817435,
       "websiteUrl": "http://www.kcis.edu.hk",
-      "sourceLastUpdate": "2023-11-24T15:04:12"
+      "sourceLastUpdate": "2026-08-03T18:19:15"
+    },
+    {
+      "nameEn": "KIANGSU & CHEKIANG PRIMARY SCHOOL",
+      "nameZh": "蘇浙小學校",
+      "level": "PRIMARY",
+      "type": "PRIVATE",
+      "districtEn": "EASTERN",
+      "districtZh": "東區",
+      "genderEn": "CO-ED",
+      "genderZh": "男女",
+      "religionEn": "NOT APPLICABLE",
+      "religionZh": "不適用",
+      "addressEn": "30 CHING WAH STREET NORTH POINT HONG KONG (EXCLUDING THE AREA OF CHILD CARE CENTRE)",
+      "addressZh": "香港北角清華街30號(幼兒中心專用範圍除外)",
+      "latitude": 22.28905555,
+      "longitude": 114.19817435,
+      "websiteUrl": "https://www.kcs.edu.hk",
+      "sourceLastUpdate": "2026-06-26T09:42:17"
     },
     {
       "nameEn": "KING LAM CATHOLIC PRIMARY SCHOOL",
@@ -4002,7 +4002,7 @@
     },
     {
       "nameEn": "KWUN TONG GOVERNMENT PRIMARY SCHOOL (SAU MING ROAD)",
-      "nameZh": "觀塘官立小學〈秀明道〉",
+      "nameZh": "觀塘官立小學<秀明道>",
       "level": "PRIMARY",
       "type": "GOVT",
       "districtEn": "KWUN TONG",
@@ -4015,7 +4015,7 @@
       "latitude": 22.31526275,
       "longitude": 114.23397288,
       "websiteUrl": "http://www.ktgps-smr.edu.hk",
-      "sourceLastUpdate": "2023-11-24T15:02:15"
+      "sourceLastUpdate": "2026-04-29T12:33:29"
     },
     {
       "nameEn": "LA SALLE PRIMARY SCHOOL",
@@ -4100,12 +4100,12 @@
       "genderZh": "男女",
       "religionEn": "NOT APPLICABLE",
       "religionZh": "不適用",
-      "addressEn": "CHEUNG SHA UPPER VILLAGE, DD332L (CX2229), LANTAU ISLAND, NEW TERRITORIES",
-      "addressZh": "新界大嶼山丈量約份332L號(租約2229)長沙上村",
-      "latitude": 22.23495236,
-      "longitude": 113.95860209,
-      "websiteUrl": "https://www.lis.edu.hk",
-      "sourceLastUpdate": "2023-11-24T17:03:44"
+      "addressEn": "DD 328 TONG FUK VILLAGE TONG FUK LANTAU ISLAND NEW TERRITORIES",
+      "addressZh": "新界大嶼山塘福塘福村丈量約份328號",
+      "latitude": 22.22861109,
+      "longitude": 113.93198637,
+      "websiteUrl": "http://www.lis.edu.hk",
+      "sourceLastUpdate": "2023-11-24T17:03:51"
     },
     {
       "nameEn": "LANTAU INTERNATIONAL SCHOOL",
@@ -4118,12 +4118,12 @@
       "genderZh": "男女",
       "religionEn": "NOT APPLICABLE",
       "religionZh": "不適用",
-      "addressEn": "DD 328 TONG FUK VILLAGE TONG FUK LANTAU ISLAND NEW TERRITORIES",
-      "addressZh": "新界大嶼山塘福塘福村丈量約份328號",
-      "latitude": 22.22861109,
-      "longitude": 113.93198637,
-      "websiteUrl": "http://www.lis.edu.hk",
-      "sourceLastUpdate": "2023-11-24T17:03:51"
+      "addressEn": "CHEUNG SHA UPPER VILLAGE, DD332L (CX2229), LANTAU ISLAND, NEW TERRITORIES",
+      "addressZh": "新界大嶼山丈量約份332L號(租約2229)長沙上村",
+      "latitude": 22.23495236,
+      "longitude": 113.95860209,
+      "websiteUrl": "https://www.lis.edu.hk",
+      "sourceLastUpdate": "2023-11-24T17:03:44"
     },
     {
       "nameEn": "LEE CHI TAT MEMORIAL SCHOOL",
@@ -4228,8 +4228,8 @@
       "addressZh": "香港大坑浣紗街73號",
       "latitude": 22.27724398,
       "longitude": 114.19392261,
-      "websiteUrl": "https://www.lsths.edu.hk/lishing",
-      "sourceLastUpdate": "2023-11-24T12:18:06"
+      "websiteUrl": "https://lsths.edu.hk/tc/index.php",
+      "sourceLastUpdate": "2026-08-03T17:58:07"
     },
     {
       "nameEn": "LINDEN SCHOOL",
@@ -4246,8 +4246,8 @@
       "addressZh": "九龍美孚新邨第六期恆柏道6A平台T80-81",
       "latitude": 22.3386492,
       "longitude": 114.13995158,
-      "websiteUrl": "",
-      "sourceLastUpdate": "2025-12-15T12:42:06"
+      "websiteUrl": "https://www.lindenwaldorf.edu.hk",
+      "sourceLastUpdate": "2026-03-02T13:32:21"
     },
     {
       "nameEn": "LING LIANG CHURCH SAU TAK PRIMARY SCHOOL",
@@ -4506,6 +4506,24 @@
       "nameZh": "LYC'EE FRANCAIS INTERNATIONAL (FRENCH INTERNATIONAL SCHOOL)",
       "level": "PRIMARY",
       "type": "INTERNATIONAL",
+      "districtEn": "EASTERN",
+      "districtZh": "東區",
+      "genderEn": "CO-ED",
+      "genderZh": "男女",
+      "religionEn": "NOT APPLICABLE",
+      "religionZh": "不適用",
+      "addressEn": "1 CHEUNG MAN ROAD CHAI WAN HONG KONG",
+      "addressZh": "1 CHEUNG MAN ROAD CHAI WAN HONG KONG",
+      "latitude": 22.26747189,
+      "longitude": 114.23623351,
+      "websiteUrl": "https://www.fis.edu.hk",
+      "sourceLastUpdate": "2023-11-24T17:03:45"
+    },
+    {
+      "nameEn": "LYC'EE FRANCAIS INTERNATIONAL (FRENCH INTERNATIONAL SCHOOL)",
+      "nameZh": "LYC'EE FRANCAIS INTERNATIONAL (FRENCH INTERNATIONAL SCHOOL)",
+      "level": "PRIMARY",
+      "type": "INTERNATIONAL",
       "districtEn": "WAN CHAI",
       "districtZh": "灣仔區",
       "genderEn": "CO-ED",
@@ -4536,24 +4554,6 @@
       "longitude": 114.25764819,
       "websiteUrl": "https://www.fis.edu.hk/en",
       "sourceLastUpdate": "2023-11-24T17:03:42"
-    },
-    {
-      "nameEn": "LYC'EE FRANCAIS INTERNATIONAL (FRENCH INTERNATIONAL SCHOOL)",
-      "nameZh": "LYC'EE FRANCAIS INTERNATIONAL (FRENCH INTERNATIONAL SCHOOL)",
-      "level": "PRIMARY",
-      "type": "INTERNATIONAL",
-      "districtEn": "EASTERN",
-      "districtZh": "東區",
-      "genderEn": "CO-ED",
-      "genderZh": "男女",
-      "religionEn": "NOT APPLICABLE",
-      "religionZh": "不適用",
-      "addressEn": "1 CHEUNG MAN ROAD CHAI WAN HONG KONG",
-      "addressZh": "1 CHEUNG MAN ROAD CHAI WAN HONG KONG",
-      "latitude": 22.26747189,
-      "longitude": 114.23623351,
-      "websiteUrl": "https://www.fis.edu.hk",
-      "sourceLastUpdate": "2023-11-24T17:03:45"
     },
     {
       "nameEn": "MA ON SHAN LING LIANG PRIMARY SCHOOL",
@@ -4762,12 +4762,12 @@
       "genderZh": "男女",
       "religionEn": "CATHOLICISM",
       "religionZh": "天主教",
-      "addressEn": "11 CHEUNG MAN ROAD CHAI WAN HONG KONG",
-      "addressZh": "香港柴灣祥民道11號",
+      "addressEn": "NEW ANNEX AND 11 CHEUNG MAN ROAD, CHAI WAN, HONG KONG",
+      "addressZh": "香港柴灣祥民道11號及新翼校舍",
       "latitude": 22.26834788,
       "longitude": 114.23618537,
       "websiteUrl": "https://www.mengtak.edu.hk",
-      "sourceLastUpdate": "2023-12-27T09:57:03"
+      "sourceLastUpdate": "2026-08-03T17:56:31"
     },
     {
       "nameEn": "METHODIST SCHOOL",
@@ -5536,10 +5536,10 @@
       "religionZh": "不適用",
       "addressEn": "3 AU PUI WAN STREET, FO TAN, SHA TIN, NEW TERRITORIES",
       "addressZh": "新界沙田火炭坳背灣街3號",
-      "latitude": 22.39334096,
-      "longitude": 114.19490788,
+      "latitude": 22.39616076,
+      "longitude": 114.19702407,
       "websiteUrl": "https://www.plkshs.edu.hk",
-      "sourceLastUpdate": "2025-03-04T10:22:06"
+      "sourceLastUpdate": "2026-04-20T10:04:16"
     },
     {
       "nameEn": "PO LEUNG KUK STANLEY HO SAU NAN PRIMARY SCHOOL",
@@ -6653,7 +6653,7 @@
       "addressEn": "14 & 19 HOK YUEN STREET HUNG HOM KOWLOON",
       "addressZh": "九龍紅磡鶴園街14號及19號",
       "latitude": 22.31073012,
-      "longitude": 114.18690000000001,
+      "longitude": 114.1869,
       "websiteUrl": "https://www.stps.edu.hk",
       "sourceLastUpdate": "2023-11-24T12:18:08"
     },
@@ -6904,10 +6904,10 @@
       "religionZh": "天主教",
       "addressEn": "26 CAINE ROAD HONG KONG",
       "addressZh": "香港堅道26號",
-      "latitude": 22.28023235,
-      "longitude": 114.15351859,
+      "latitude": 22.28016502,
+      "longitude": 114.15347843,
       "websiteUrl": "http://www.shcs.edu.hk",
-      "sourceLastUpdate": "2023-11-24T12:18:54"
+      "sourceLastUpdate": "2024-09-09T13:18:38"
     },
     {
       "nameEn": "SACRED HEART CANOSSIAN SCHOOL, PRIVATE SECTION",
@@ -6976,7 +6976,7 @@
       "religionZh": "天主教",
       "addressEn": "BLOCKS F & G ANCILLARY BLOCK PO TUNG ROAD SAI KUNG NEW TERRITORIES (DD 221 LOT 1762)",
       "addressZh": "新界西貢普通道F座G座及附屬房舍(第221約第1762號地段)",
-      "latitude": 22.382830470000002,
+      "latitude": 22.38283047,
       "longitude": 114.27042398,
       "websiteUrl": "http://www.stcps.edu.hk",
       "sourceLastUpdate": "2023-11-24T12:18:32"
@@ -7316,7 +7316,7 @@
       "religionZh": "不適用",
       "addressEn": "AREA 27 TIN SHUI WAI YUEN LONG NEW TERRITORIES",
       "addressZh": "新界元朗天水圍第27區",
-      "latitude": 22.460633520000002,
+      "latitude": 22.46063352,
       "longitude": 114.0028165,
       "websiteUrl": "http://www.kysps.edu.hk",
       "sourceLastUpdate": "2023-11-24T12:19:24"
@@ -7995,7 +7995,7 @@
       "religionZh": "天主教",
       "addressEn": "29 YEE ON STREET KWUN TONG KOWLOON",
       "addressZh": "九龍觀塘宜安街29號",
-      "latitude": 22.315329470000002,
+      "latitude": 22.31532947,
       "longitude": 114.22296666,
       "websiteUrl": "http://www.sjbcps.edu.hk",
       "sourceLastUpdate": "2023-11-24T12:18:52"
@@ -8193,7 +8193,7 @@
       "religionZh": "天主教",
       "addressEn": "81A WONG NAI CHUNG ROAD HAPPY VALLEY HONG KONG",
       "addressZh": "香港跑馬地黃泥涌道81A號",
-      "latitude": 22.273018360000002,
+      "latitude": 22.27301836,
       "longitude": 114.1844619,
       "websiteUrl": "https://www.sppcs.edu.hk",
       "sourceLastUpdate": "2023-11-24T12:18:09"
@@ -9486,12 +9486,12 @@
       "genderZh": "男女",
       "religionEn": "PROTESTANTISM / CHRISTIANITY",
       "religionZh": "基督教",
-      "addressEn": "PRIMARY/KINDERGARTEN SECTION, PRIMARY SECTION AND KINDERGARTEN PLAYGROUND, COVERED PLAYGROUND, SWIMMING POOL, BLOCK 1 (6/F-7/F), BLOCK 2 (EXCLUDING G21-G23, G23A), CENTENNIAL HALL BUILDING (PRIMARY SECTION CLASSROOMS), FUK KWAN AVENUE ENTRANCE, 50 TAI HAND ROAD, HONG KONG",
+      "addressEn": "PRIMARY/KINDERGARTEN SECTION, PRIMARY SECTION AND KINDERGARTEN PLAYGROUND, COVERED PLAYGROUND, SWIMMING POOL, BLOCK 1 (6/F-7/F), BLOCK 2 (EXCLUDING G21-G23, G23A), CENTENNIAL HALL BUILDING (PRIMARY SECTION CLASSROOMS), FUK KWAN AVENUE ENTRANCE, 50 TAI HANG ROAD, HONG KONG",
       "addressZh": "香港大坑道50號小學及幼稚園部，小學部和幼稚園操場、有蓋操場、游泳池、1座(6樓和7樓)、2座(G21-23及G23A室除外)、百齡堂 (小學課室)、福群道入口",
       "latitude": 22.2758445,
       "longitude": 114.19412621,
       "websiteUrl": "http://www.tlmshkps.edu.hk",
-      "sourceLastUpdate": "2024-09-27T12:50:44"
+      "sourceLastUpdate": "2026-04-29T12:30:26"
     },
     {
       "nameEn": "THE YUEN YUEN INSTITUTE CHAN KWOK CHIU HING TAK PRIMARY SCHOOL",
@@ -9756,8 +9756,8 @@
       "addressZh": "新界荃灣石圍角邨屋邨第一小學",
       "latitude": 22.37539924,
       "longitude": 114.12558696,
-      "websiteUrl": "http://www.twpsch.edu.hk",
-      "sourceLastUpdate": "2023-11-24T12:19:34"
+      "websiteUrl": "https://www.hcy.edu.hk",
+      "sourceLastUpdate": "2026-08-03T17:57:13"
     },
     {
       "nameEn": "TSUEN WAN TRADE ASSOCIATION PRIMARY SCHOOL",
@@ -10566,6 +10566,24 @@
       "longitude": 114.15257841,
       "websiteUrl": "http://www.yingwaps.edu.hk",
       "sourceLastUpdate": "2023-11-24T12:38:21"
+    },
+    {
+      "nameEn": "YK PAO SCHOOL HONG KONG",
+      "nameZh": "香港包玉剛學校",
+      "level": "PRIMARY",
+      "type": "INTERNATIONAL",
+      "districtEn": "KWUN TONG",
+      "districtZh": "觀塘區",
+      "genderEn": "CO-ED",
+      "genderZh": "男女",
+      "religionEn": "NOT APPLICABLE",
+      "religionZh": "不適用",
+      "addressEn": "1/F., MAYA, NO.8 SHUNG SHAN STREET, KOWLOON",
+      "addressZh": "九龍崇山街8號曦臺一樓",
+      "latitude": 22.2936583,
+      "longitude": 114.23635213,
+      "websiteUrl": "",
+      "sourceLastUpdate": "2026-05-28T10:51:50"
     },
     {
       "nameEn": "YMCA CHRISTIAN ACADEMY",
